@@ -1,0 +1,219 @@
+.class-skills-line {
+    margin-top: 6px;
+    margin-bottom: 4px;
+    font-size: 14px;
+    display: flex;
+    align-items: flex-start;
+}
+
+/* Left side: "ClassName [icon] :" */
+.class-label-block {
+    white-space: nowrap;
+}
+
+/* Right side: block of skills, indented */
+.class-skills-block {
+    margin-left: 10px;      /* indent after ":" */
+}
+
+/* Each skill line */
+.skills-line {
+    display: block;
+}
+
+/* existing ones can stay as-is */
+.class-name {
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.class-icon {
+    height: 20px;
+    margin-right: 4px;
+}
+
+.skill-icon {
+    height: 18px;
+    vertical-align: middle;
+}
+
+.skill-name-main {
+    font-weight: 500;
+}
+
+.skill-name-info {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+.skill-separator {
+    margin: 0 4px;
+}
+
+.skill-label-icon-space {
+    display: inline-block;
+    width: 2px;
+}
+
+
+/* Whole “headline” row (Rating + %ile + icons) */
+.build-headline-row {
+    margin-top: 8px;
+    font-size: 24px;        /* was 20, bump again */
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Big numbers (rating, percentile) */
+.headline-rating-number {
+    font-size: 40px;        /* bigger hero number */
+    font-weight: 800;
+}
+
+/* Tiny "Rating" / "%ile" sub-labels */
+.headline-sub-label {
+    font-size: 16px;        /* ~12–14pt effective */
+    opacity: 0.8;
+    vertical-align: baseline;
+}
+
+/* Spacer between pieces like " | " */
+.headline-space {
+    display: inline-block;
+    width: 2px;
+}
+
+/* The actual " | " separators */
+.headline-separator {
+    margin: 0 6px;
+    opacity: 0.7;
+}
+
+/* Shop face / gem quality icons */
+.quality-icon {
+    height: 32px;
+    margin-left: 4px;
+}
+
+/* Special icons like APEX perk */
+.special-icon {
+    height: 30px;
+    margin-left: 4px;
+}
+
+/* Broken quest icon for N/Q */
+.headline-nq-icon {
+    height: 32px;
+    margin-left: 4px;
+}
+
+/* Container for all icons in the headline */
+.headline-icons-block {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Outer container for the whole build section in Frame 2 / Tab 2 */
+.tab2-frame2-build-section {
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+/* Attribute table under the headline */
+.build-attr-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.build-attr-table th,
+.build-attr-table td {
+    border: 1px solid #dddddd;   /* thin gray lines */
+    padding: 4px 6px;
+}
+
+.build-attr-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+}
+
+.attr-commentary-cell {
+    font-size: 12px;             /* slightly smaller text */
+    color: #555555;
+}
+
+/* --- Detail Tab: Single Skill Detail Table */
+/* Container for the two build tables (2 and 3) */
+.build-subtables-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+/* Left table (build attributes) */
+.build-attr-table {
+    flex: 1;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+.build-attr-table th,
+.build-attr-table td {
+    border: 1px solid #dddddd;
+    padding: 4px 6px;
+}
+
+.build-attr-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+}
+
+/* Right table (single-skill summary) */
+.single-skill-table {
+    flex: 1;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+.single-skill-table th,
+.single-skill-table td {
+    border: 1px solid #dddddd;
+    padding: 4px 6px;
+}
+
+.single-skill-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+}
+
+/* Icons & sparkline */
+.single-skill-icon {
+    height: 22px;
+}
+
+.single-skill-tier-icon {
+    height: 20px;
+    margin-left: 4px;
+}
+
+.single-skill-rating {
+    font-weight: 600;
+}
+
+.single-skill-sparkline {
+    display: flex;
+    height: 14px;
+    width: 100%;
+    border: 1px solid #cccccc;
+    overflow: hidden;
+}
+
+
