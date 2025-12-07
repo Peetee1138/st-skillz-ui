@@ -220,7 +220,7 @@ def get_all_data_for_class(class_code: str):
     # --- Prefer NPZ if it exists ---
     if npz_path and npz_path.exists():
         print(f"[get_all_data_for_class] Loading NPZ for {class_code}: {npz_path}")
-        with np.load(npz_path, allow_pickle=False) as data:
+        with np.load(npz_path, allow_pickle=True) as data:
             cols = {}
             for key in data.files:
                 # only mr_* columns → strip prefix
