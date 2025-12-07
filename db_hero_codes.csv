@@ -1,0 +1,21 @@
+Code,Hero_Class,Short_Name,available
+B1,Archmage,Archmage,FALSE
+B2,Bishop,Bishop,FALSE
+B3,Arch Druid,ADruid,FALSE
+B4,Warlock,Warlock,FALSE
+B5,Spellknight,SpellK,FALSE
+B6,Astramancer,Astra,FALSE
+B7,Fateweaver,FateW,FALSE
+G2,Grandmaster,GrandM,TRUE
+G3,Conquistador,Conq,TRUE
+G4,Pathfinder,PathF,TRUE
+G5,Sensei,Sensei,FALSE
+G6,Acrobat,Acrobat,FALSE
+G7,Praetorian,Praet,FALSE
+R1,Mercenary,Merc,FALSE
+R2,Chieftain,Chief,FALSE
+R3,Lord,Lord,FALSE
+R4,Warden,Warden,FALSE
+R5,Daimyo,Daimyo,FALSE
+R6,Jarl,Jarl,FALSE
+R7,Death Knight,DeathK,FALSE
