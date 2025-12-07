@@ -34,6 +34,13 @@ CLASS_ALL_DATA_FILES = {
     "G4": CLASS_DIR / "G4_all_data_pass4_unique.csv",
 }
 
+# NEW: NPZ versions (same folder, same base name)
+CLASS_ALL_DATA_NPZ_FILES = {
+    "G2": CLASS_DIR / "G2_all_data_pass4_unique.npz",
+    "G3": CLASS_DIR / "G3_all_data_pass4_unique.npz",
+    "G4": CLASS_DIR / "G4_all_data_pass4_unique.npz",
+}
+
 CLASS_SKILL_ASSESS_FILES = {
     "G2": CLASS_DIR / "G2_data_assess.csv",
     "G3": CLASS_DIR / "G3_data_assess.csv",
@@ -185,12 +192,19 @@ def canonical_skill_string(s1, s2, s3, s4) -> str:
 
 _all_data_cache = {}
 
+_all_data_cache = {}
+
 def get_all_data_for_class(class_code: str):
     """
-    Lazy loader for *_all_data_pass4_unique.csv.
+    Lazy loader for *_all_data_pass4_unique, preferring NPZ (mr_*) and
+    falling back to CSV if NPZ is missing.
 
-    - First call for a class: load, parse, create skill_key, cache.
-    - Subsequent calls: reuse cached DataFrame.
+    - NPZ layout (from Macro_Ref):
+        mr_<colname>  → 1D array for each DataFrame column
+        mr_histogram  → 2D histogram array (optional, not needed here)
+
+    - After load, we strip 'mr_' and rebuild:
+        class_code, skill_list, and skill_key
     """
     if not class_code:
         return None
@@ -198,15 +212,47 @@ def get_all_data_for_class(class_code: str):
     if class_code in _all_data_cache:
         return _all_data_cache[class_code]
 
-    path = CLASS_ALL_DATA_FILES.get(class_code)
-    if not path or not path.exists():
+    npz_path = CLASS_ALL_DATA_NPZ_FILES.get(class_code)
+    csv_path = CLASS_ALL_DATA_FILES.get(class_code)
+
+    df = None
+
+    # --- Prefer NPZ if it exists ---
+    if npz_path and npz_path.exists():
+        print(f"[get_all_data_for_class] Loading NPZ for {class_code}: {npz_path}")
+        with np.load(npz_path, allow_pickle=False) as data:
+            cols = {}
+            for key in data.files:
+                # only mr_* columns → strip prefix
+                if not key.startswith("mr_"):
+                    continue
+                if key == "mr_histogram":
+                    # optional 2D histogram; the app doesn't need it directly
+                    continue
+                col_name = key[3:]  # drop 'mr_'
+                cols[col_name] = data[key]
+
+        if not cols:
+            print(f"[get_all_data_for_class] NPZ had no mr_* data for {class_code}")
+            return None
+
+        df = pd.DataFrame(cols)
+
+    # --- Fallback: CSV if NPZ missing ---
+    elif csv_path and csv_path.exists():
+        print(f"[get_all_data_for_class] Loading CSV for {class_code}: {csv_path}")
+        df = pd.read_csv(csv_path)
+    else:
+        print(
+            f"[get_all_data_for_class] No NPZ or CSV found for class {class_code}. "
+            f"npz={npz_path}, csv={csv_path}"
+        )
         return None
 
-    df = pd.read_csv(path)
-
-    # Be robust: skill_code vs skill_name
+    # --- As before: parse skill codes, build skill_list & skill_key ---
     skill_col = "skill_code"
     if skill_col not in df.columns:
+        # older versions sometimes used 'skill_name'
         skill_col = "skill_name"
 
     parsed = df[skill_col].apply(parse_skill_codes)
@@ -216,6 +262,39 @@ def get_all_data_for_class(class_code: str):
 
     _all_data_cache[class_code] = df
     return df
+
+
+# def get_all_data_for_class(class_code: str):
+#     """
+#     Lazy loader for *_all_data_pass4_unique.csv.
+
+#     - First call for a class: load, parse, create skill_key, cache.
+#     - Subsequent calls: reuse cached DataFrame.
+#     """
+#     if not class_code:
+#         return None
+
+#     if class_code in _all_data_cache:
+#         return _all_data_cache[class_code]
+
+#     path = CLASS_ALL_DATA_FILES.get(class_code)
+#     if not path or not path.exists():
+#         return None
+
+#     df = pd.read_csv(path)
+
+#     # Be robust: skill_code vs skill_name
+#     skill_col = "skill_code"
+#     if skill_col not in df.columns:
+#         skill_col = "skill_name"
+
+#     parsed = df[skill_col].apply(parse_skill_codes)
+#     df["class_code"] = parsed.apply(lambda x: x[0])
+#     df["skill_list"] = parsed.apply(lambda x: x[1])
+#     df["skill_key"] = df["skill_list"].apply(lambda lst: "".join(sorted(lst)))
+
+#     _all_data_cache[class_code] = df
+#     return df
     
 # all_data_by_class = get_all_data_for_class()
 
