@@ -1,219 +1,428 @@
-.class-skills-line {
-    margin-top: 6px;
-    margin-bottom: 4px;
-    font-size: 14px;
-    display: flex;
-    align-items: flex-start;
+/* =====================================================================
+   FULL REPLACEMENT: assets/styles.css
+   Goal: Fix Tab2 Frame2 + Tab3 Frame2 headline/layout without collateral.
+   ===================================================================== */
+
+
+/* -------------------------------------------------------
+   0) Safe global defaults (minimal / do-no-harm)
+------------------------------------------------------- */
+* { box-sizing: border-box; }
+
+img { display: inline-block; }
+
+button {
+  font-family: inherit;
 }
 
-/* Left side: "ClassName [icon] :" */
-.class-label-block {
-    white-space: nowrap;
+/* Prevent ugly default focus rings on icon-buttons (still accessible) */
+button:focus {
+  outline: none;
+}
+button:focus-visible {
+  outline: 2px solid rgba(0,0,0,0.35);
+  outline-offset: 2px;
 }
 
-/* Right side: block of skills, indented */
-.class-skills-block {
-    margin-left: 10px;      /* indent after ":" */
-}
 
-/* Each skill line */
-.skills-line {
-    display: block;
-}
 
-/* existing ones can stay as-is */
+/* -------------------------------------------------------
+   1) Shared headline typography helpers (used by Tab2/Tab3)
+------------------------------------------------------- */
+
 .class-name {
-    font-weight: 600;
-    margin-right: 4px;
+  font-size: 24px;
+  font-weight: 600;
+  vertical-align: middle;
 }
 
 .class-icon {
-    height: 20px;
-    margin-right: 4px;
+  height: 32px;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
 .skill-icon {
-    height: 18px;
-    vertical-align: middle;
+  height: 32px;
+  vertical-align: middle;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .skill-name-main {
-    font-weight: 500;
+  font-size: 24px;
+  font-weight: 500;
+  vertical-align: middle;
 }
 
 .skill-name-info {
-    font-size: 11px;
-    opacity: 0.85;
+  font-size: 18px;
+  font-weight: 400;   /* ensure NOT bold */
+  opacity: 0.88;
+  vertical-align: middle;
 }
 
-.skill-separator {
-    margin: 0 4px;
+/* separator: stay inline and centered */
+.skill-separator{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  font-size: 30px;
+  line-height: 32px;
+  margin: 0 4px;            /* tighter */
+  opacity: 0.70;
 }
 
+
+/* A thin spacer when you want slight offset */
 .skill-label-icon-space {
-    display: inline-block;
-    width: 2px;
+  display: inline-block;
+  width: 4px;
 }
 
 
-/* Whole “headline” row (Rating + %ile + icons) */
-.build-headline-row {
-    margin-top: 8px;
-    font-size: 24px;        /* was 20, bump again */
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
+/* -------------------------------------------------------
+   2) Tab 2 Frame 2 — Class + Skills line (2x2 grid)
+   Requirements:
+   - Class label vertically centered between the two skill rows
+   - Skills start to the right of the ":" (clean gutter)
+   - 2 skills per row, stable grid
+------------------------------------------------------- */
+
+/* Outer row: class label + skills grid */
+.class-skills-line {
+  display: flex;
+  align-items: center;      /* ✅ center class block between the 2 skill rows */
+  gap: 6px;
 }
 
-/* Big numbers (rating, percentile) */
+/* Left block: "ClassName [icon] :" */
+.class-label-block {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Right side: two explicit rows */
+.class-skills-block{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 6px;         /* starts right after ":" (smaller than before) */
+  margin-left: 0;
+  min-width: 0;
+}
+
+/* Each row is a flex line (NOT grid) */
+.skills-line{
+  display: flex;
+  align-items: center;       /* (c) vertically center separators/icons */
+  gap: 10px;                 /* spacing between skill blocks */
+  flex-wrap: nowrap;
+}
+
+/* Each skill chunk: icon + text */
+.headline-skill-chunk{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;                  /* (b) reduce icon→text gap by ~50% */
+  min-width: 0;
+}
+
+/* Big headline numbers (Tab2 + Tab3) */
 .headline-rating-number {
-    font-size: 40px;        /* bigger hero number */
-    font-weight: 800;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 40px;
 }
 
-/* Tiny "Rating" / "%ile" sub-labels */
+/* 6px gap between class/skill line and headline line (Tab2 Frame2) */
+.tab2-frame2-build-section .class-skills-line{
+  margin-bottom: 6px;
+}
+
+/* -----------------------------------------------
+   Tab2 clickable skill icons (NO gray border)
+   IMPORTANT: Tab3 icons should NOT be clickable.
+------------------------------------------------ */
+/* Tab2 clickable skill icons (no gray border) */
+.tab2-frame2-build-section .headline-skill-chunk button{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+
+.tab2-frame2-build-section .headline-skill-chunk button:hover img.skill-icon {
+  filter: brightness(1.05);
+}
+
+/* -------------------------------------------------------
+   3) Tab 2 Frame 2 — Rating line
+   Requirements:
+   - “Rating” and “%ile” 25% larger
+   - not bold
+------------------------------------------------------- */
+
+.build-headline-row {
+  display: inline-flex;     /* keep compact */
+  align-items: flex-end;    /* bottom align to big numbers */
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.headline-rating-block,
+.headline-pct-block {
+  display: inline-flex;
+  align-items: flex-end;
+  line-height: 40px;
+  white-space: nowrap;
+}
+
 .headline-sub-label {
-    font-size: 16px;        /* ~12–14pt effective */
-    opacity: 0.8;
-    vertical-align: baseline;
+  font-size: 16px;          /* was ~13; +25%ish */
+  font-weight: 400;         /* ✅ not bold */
+  line-height: 16px;
+  padding-bottom: 4px;
 }
 
-/* Spacer between pieces like " | " */
-.headline-space {
-    display: inline-block;
-    width: 2px;
-}
-
-/* The actual " | " separators */
+/* separators: consistent size + centered */
 .headline-separator {
-    margin: 0 6px;
-    opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  font-size: 30px;
+  line-height: 40px;
+  margin: 0 8px;
+  opacity: 0.70;
 }
 
-/* Shop face / gem quality icons */
+/* Headline icons */
 .quality-icon {
-    height: 32px;
-    margin-left: 4px;
+  height: 40px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
-/* Special icons like APEX perk */
 .special-icon {
-    height: 30px;
-    margin-left: 4px;
+  height: 30px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
-/* Broken quest icon for N/Q */
 .headline-nq-icon {
-    height: 32px;
-    margin-left: 4px;
+  height: 32px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
-/* Container for all icons in the headline */
 .headline-icons-block {
-    display: inline-flex;
-    align-items: center;
+  display: inline-flex;
+  align-items: center;      /* ✅ center vertically */
 }
 
-/* Outer container for the whole build section in Frame 2 / Tab 2 */
+
+/* -------------------------------------------------------
+   4) Tab 2 Frame 2 — Tables (keep as you had)
+------------------------------------------------------- */
+
 .tab2-frame2-build-section {
-    font-size: 14px;
-    line-height: 1.3;
+  font-size: 14px;
+  line-height: 1.3;
 }
 
-/* Attribute table under the headline */
 .build-attr-table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 6px;
-    font-size: 13px;
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 13px;
 }
 
 .build-attr-table th,
 .build-attr-table td {
-    border: 1px solid #dddddd;   /* thin gray lines */
-    padding: 4px 6px;
+  border: 1px solid #dddddd;
+  padding: 4px 6px;
 }
 
 .build-attr-table th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-    text-align: left;
+  background-color: #f5f5f5;
+  font-weight: 600;
+  text-align: left;
 }
 
-.attr-commentary-cell {
-    font-size: 12px;             /* slightly smaller text */
-    color: #555555;
-}
-
-/* --- Detail Tab: Single Skill Detail Table */
-/* Container for the two build tables (2 and 3) */
+/* Container row for build tables (tab2 detail area) */
 .build-subtables-row {
-    display: flex;
-    gap: 16px;
-    margin-top: 4px;
-}
-
-/* Left table (build attributes) */
-.build-attr-table {
-    flex: 1;
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 13px;
-}
-
-.build-attr-table th,
-.build-attr-table td {
-    border: 1px solid #dddddd;
-    padding: 4px 6px;
-}
-
-.build-attr-table th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-    text-align: left;
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
 }
 
 /* Right table (single-skill summary) */
 .single-skill-table {
-    flex: 1;
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 13px;
+  flex: 1;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
 }
 
 .single-skill-table th,
 .single-skill-table td {
-    border: 1px solid #dddddd;
-    padding: 4px 6px;
+  border: 1px solid #dddddd;
+  padding: 4px 6px;
 }
 
 .single-skill-table th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-    text-align: left;
+  background-color: #f5f5f5;
+  font-weight: 600;
+  text-align: left;
 }
 
-/* Icons & sparkline */
 .single-skill-icon {
-    height: 22px;
+  height: 32px;
+  width: 32px;
 }
 
 .single-skill-tier-icon {
-    height: 20px;
-    margin-left: 4px;
+  height: 32px;
+  width: 32px;
+  margin-left: 10px; /* (fixed: remove space in "10 px") */
 }
 
 .single-skill-rating {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .single-skill-sparkline {
-    display: flex;
-    height: 14px;
-    width: 100%;
-    border: 1px solid #cccccc;
-    overflow: hidden;
+  display: flex;
+  height: 24px;
+  width: 100%;
+  border: 1px solid #cccccc;
+  overflow: hidden;
 }
 
 
+/* -------------------------------------------------------
+   5) Tab 3 Frame 2 — Selected Skill Summary header row
+   Requirements:
+   - icons NOT clickable + no gray border
+   - separators match Tab2 and vertically centered
+   - sub-text 25% larger and not bold
+   - icons centered vertically
+------------------------------------------------------- */
+
+/* TAB 3: single-skill class/skill line should NOT behave like the 2-row grid */
+/* TAB 3 ONLY: undo Tab2's `display: contents` so Tab3 is truly single-line */
+/* --- TAB 3: FORCE the Class/Skill header row to stay on ONE line --- */
+.ssi-headline-row{
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;          /* ✅ was wrap -> causes your 2-line issue */
+  gap: 10px;
+  white-space: nowrap;        /* ✅ keeps separators + labels inline */
+  min-width: 0;               /* ✅ enables flex shrink correctly */
+}
+
+.ssi-headline-row .single-skill-class-skill-block{
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 auto;             /* ✅ allow this side to shrink instead of wrapping */
+  min-width: 0;
+}
+
+/* Make both blocks inline-flex so they behave like a single line */
+.ssi-headline-row .class-label-block{
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* If you want to guarantee no wrap inside the skill name itself */
+.ssi-headline-row .skill-name-main,
+.ssi-headline-row .skill-name-info{
+  white-space: nowrap;
+}
+
+.ssi-headline-row .skills-line{
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+}
+
+
+/* also make sure the container centers normally */
+.ssi-headline-row .class-skills-line{
+  align-items: center !important;
+}
+
+/* 6px gap between class/skill line and rating row (Tab3 Frame2) */
+.single-skill-summary-block .single-skill-class-line{
+  margin-bottom: 6px;
+}
+
+
+/* Rating row inside Tab3 */
+.ssi-rating-row {
+  display: inline-flex;
+  align-items: center;     /* ✅ center icons + separators */
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+/* Make the small labels (Rating, %ile, etc) larger & not bold on Tab3 too */
+.ssi-headline-row .headline-sub-label {
+  font-size: 16px;         /* ✅ +25%ish */
+  font-weight: 400;        /* ✅ not bold */
+  padding-bottom: 0;       /* Tab3 looks better without “subscript” nudge */
+}
+
+/* Ensure the separators are same proportion as Tab2 */
+.ssi-headline-row .headline-separator {
+  height: 40px;
+  font-size: 30px;
+  line-height: 40px;
+  margin: 0 8px;
+  opacity: 0.70;
+}
+
+/* Tab3 icons are NOT clickable: if they are wrapped in a button, neutralize it */
+.ssi-headline-row button {
+  pointer-events: none;    /* ✅ prevents click-through on Tab3 */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Also ensure no gray border appears around images in Tab3 */
+.ssi-headline-row img.skill-icon,
+.ssi-headline-row img.single-skill-icon,
+.ssi-headline-row img.class-icon {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+/* Roland block */
+.roland-block {
+  display: inline-flex;
+  align-items: center;     /* ✅ center vertically */
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.roland-icon {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
