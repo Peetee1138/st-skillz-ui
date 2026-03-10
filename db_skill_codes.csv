@@ -1,0 +1,78 @@
+full_name,short_name,rarity,skill_id
+Acrobatics (+25% EVA),Acr,Common,0
+Adept,Ade,Epic,1
+All Natural (+30% Crit Chance & +100% Crit Damage),All,Rare,2
+Antimagic Net (+120% ATK & +12% EVA),Ant,Rare,3
+Arcane Blast (+130% ATK),Arc,Common,4
+Assassinate (+120% ATK & +100% Crit Damage),Ass,Epic,5
+Axe Master (+200% Attack with Axe),Axe,Common,6
+Backstab (+80% ATK & +15% Crit Chance),Bac,Common,7
+Battering Blows (+140% ATK & +35% HP),Bat,Epic,8
+Blurred Movement (+33% EVA),Blu,Epic,9
+Bow Master (+200% Attack with Bow),Bow,Common,10
+Caltrops (+110% ATK & +10% EVA),Cal,Rare,11
+Catalyst Master (+250% Attack with Catalyst),Cat,Common,12
+Cleave (+80% ATK & +75 HP),Cle,Common,13
+Cloak & Dagger (+120% DEF & +12% EVA),Clo,Epic,14
+Crossbow Master (+200% Attack with Crossbow),Cro,Common,15
+Curse (+140% ATK & +7% EVA),Cur,Rare,16
+Dagger Master (+200% Attack with Dagger),Dag,Common,17
+Dance of Blades (+150% ATK & +12% EVA),Dan,Epic,18
+Deadly Criticals (+250% Crit Damage),DCr,Rare,19
+Death Dealer (+350% Crit Damage),DDl,Epic,20
+Deception (+18% EVA & +18% Crit Chance),Dec,Rare,21
+Destructive Strikes (+150% ATK & +300% Crit Damage),Des,Epic,22
+Disintegrate (+150% ATK & +60% Crit Damage),Dis,Rare,23
+Double Cast (+220% ATK),Dou,Epic,24
+Dragon Breath (+175% ATK),Dra,Rare,25
+Eagle Eyes (+25% Crit Chance),Eag,Common,26
+Electric Arc (+170% ATK),Ele,Rare,27
+Extended Warranty (+40% bonus stats from EQ & -60% Break Chance),EWa,Epic,28
+Extra Conditioning (+60% DEF & +20% EVA),ECo,Rare,29
+Extra Plating (+150% DEF & +40% HP),EPl,Epic,30
+Fast Healer (+40% HP & -30% Resting Time),FaH,Rare,31
+Fast Learner (+75% XP & +25% bonus stats from EQ),FaL,Common,32
+Finesse (+120% ATK & +13% Crit Chance),Fin,Rare,33
+Fireball (+160% ATK & +200 ATK),Fir,Rare,34
+Flame Brand (+125% ATK & +50% DEF),Fla,Rare,35
+Glancing Blows (+90% DEF & +13% EVA),Gla,Rare,36
+Gun Master (+200% Attack with Gun),Gun,Common,37
+Hex (+125% ATK & +50% Crit Damage),Hex,Common,38
+Hinder (+100% ATK & +15% Crit Chance),Hin,Rare,39
+Impervious (+80% HP & +150 HP),Imp,Epic,40
+Instrument Master (+200% Attack with Instrument),Ins,Common,41
+Juggernaut (+75% DEF & +40% HP),Jug,Rare,42
+Life Drain (+125% ATK & +80 HP),Lif,Common,43
+Mace Master (+200% Attack with Mace),Mac,Common,44
+Mage Armor (+80% ATK & +40% DEF),MaA,Common,45
+Magic Darts (+110% ATK),MaD,Common,46
+Maintenance (+30% bonus stats from EQ & -40% Break Chance),Mai,Common,47
+Mana Shield (+120% ATK & +65% DEF),Man,Epic,48
+Marksman,Mar,Epic,49
+On Guard (+90% DEF & +100% chance to survive one fatal blow),OnG,Common,50
+Parry (+50% ATK & +75% DEF),Par,Common,51
+Perfect Form (+150% ATK & +50% DEF),PFr,Epic,52
+Perforate (+75% ATK & +100% Crit Damage),Per,Common,53
+Petrify (+190% ATK & +50% DEF),Pet,Epic,54
+Poison Cloud (+240% ATK),Poi,Epic,55
+Power Attack (+125% ATK & +12% Crit Chance),Pow,Rare,56
+Shadow Embrace (+140% ATK & +12% EVA),Sha,Rare,57
+Shield Master (+250% Defense with Shield),ShM,Common,58
+Shining Blade (+120% ATK & +60% DEF),SBl,Rare,59
+Smite (+75% ATK & +50% DEF),Smi,Common,60
+Spear Master (+200% Attack with Spear),Spe,Common,61
+Staff Master (+200% Attack with Staff),Sta,Common,62
+Sturdy (+60% HP),Stu,Common,63
+Summon Demon (+150% ATK & +60 HP),Sum,Rare,64
+Sunder (+100% ATK & +100% Crit Damage),Sun,Rare,65
+Super Genius (+300% XP & +30% bonus stats from EQ),Sup,Epic,66
+Survivor (+50% HP & -40% Resting Time),Sur,Epic,67
+Sword Master (+200% Attack with Sword),Swo,Common,68
+Telling Blows (+18% Crit Chance & +150% Crit Damage),Tel,Rare,69
+Thick Skin (+120% DEF & +30% HP),Thi,Rare,70
+Throw Daggers (+90% ATK & +12% EVA),Thr,Rare,71
+Toughness (+50% HP & -20% Resting Time),Tou,Rare,72
+Wall of Force (+90% ATK & +60% DEF),Wal,Rare,73
+Wand Master (+200% Attack with Wand),Wan,Common,74
+Warlord,War,Epic,75
+Whirlwind Attack (+140% ATK & +12% Crit Chance),Whi,Epic,76
