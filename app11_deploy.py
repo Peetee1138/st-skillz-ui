@@ -1,4 +1,4 @@
-# app9.py - v0.10
+# app11.py - v0.11
 #   0.2  - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
 #        - initial deployment to GitHub / OnRender
 #        - transition to .npz for 
@@ -8,8 +8,9 @@
 #   0.6  - Updating Tab2, Frame3 to show alternative histogram of rating percentiles
 #   0.7  - Uploading all classes, adjusting base text, fix behaviors
 #   0.8  - Rely only on xx_all_data_ui.npz (remove use of xx_final_data.npz
-#   0.9  - Clean up and move to .npy for data efficency
+#   0.9  - Clean up and move to .npy for data efficency, add Using this Tool
 #   0.10 - Add "tab 4" for Class Info
+#   0.11 - Add Discord login
 
 import os
 from pathlib import Path
@@ -22,6 +23,9 @@ import json
 
 from dash import Dash, html, dcc, dash_table, Input, Output, State, no_update, callback_context
 from dash.dependencies import ALL
+
+from flask import Flask, session, redirect, url_for, request
+from authlib.integrations.flask_client import OAuth
 
 # ---------- CONFIG ----------
 
@@ -2652,8 +2656,101 @@ def tab5_body_markdown():
 
 # ---------- DASH APP ----------
 
-app = Dash(__name__, suppress_callback_exceptions=True)
-# server = app.server
+# OLD
+# app = Dash(__name__, suppress_callback_exceptions=True)
+
+# With Discord Integration
+server = Flask(__name__)
+server.secret_key = os.environ["FLASK_SECRET_KEY"]
+
+app = Dash(
+    __name__,
+    server=server,
+    suppress_callback_exceptions=True
+)
+
+oauth = OAuth(server)
+
+discord = oauth.register(
+    name="discord",
+    client_id=os.environ["DISCORD_CLIENT_ID"],
+    client_secret=os.environ["DISCORD_CLIENT_SECRET"],
+    access_token_url="https://discord.com/api/oauth2/token",
+    authorize_url="https://discord.com/oauth2/authorize",
+    api_base_url="https://discord.com/api/",
+    client_kwargs={"scope": "identify"},
+)
+
+ALLOWED_DISCORD_IDS = {
+    "779058036936802384",
+}
+
+@server.route("/login")
+def login():
+    redirect_uri = url_for("callback", _external=True)
+    return discord.authorize_redirect(redirect_uri)
+
+@server.route("/callback")
+def callback():
+    token = discord.authorize_access_token()
+    user = discord.get("users/@me").json()
+
+    print("DISCORD USER:", user)  # temporary, so we can see your ID locally
+
+    discord_id = user["id"]
+
+    session["discord_user"] = {
+        "id": discord_id,
+        "username": user.get("username"),
+    }
+
+# PRODUCTION
+    if discord_id in ALLOWED_DISCORD_IDS:
+        session["authorized"] = True
+        return redirect("/")
+
+    session["authorized"] = False
+    return redirect("/not-approved")
+
+# TESTING
+    # session["authorized"] = True
+    # return redirect("/")
+
+@server.route("/not-approved")
+def not_approved():
+    return """
+    <h3>Thanks for signing in.</h3>
+    <p>This alpha is currently limited to approved testers.</p>
+    """
+
+@server.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+@server.before_request
+def protect_app():
+    public_paths = {"/login", "/callback", "/not-approved", "/logout"}
+
+    if request.path in public_paths:
+        return
+
+    if request.path.startswith("/assets/"):
+        return
+
+    if request.path.startswith("/_dash-"):
+        if not session.get("authorized"):
+            return redirect("/login")
+        return
+
+    if request.path == "/favicon.ico":
+        return
+
+    if not session.get("authorized"):
+        return redirect("/login")
+
+# SERVER INFORMATION - Activate below for _deploy versions
+server = app.server
 app.title = "Skills UI — Shop Titans Skills Ratings - PoC"
 
 def _is_available(val):
@@ -2667,7 +2764,7 @@ def make_layout_tab1():
             "backgroundColor": APP_BG,
         },
         children=[
-                html.H2("Skills UI — 2-Skill Explorer (Proof of Concept)"),
+                # html.H2("Skills UI — 2-Skill Explorer (Proof of Concept)"),
 
             # -------------------------------------------------------
             # ROW 1: Frame 1 (left) + Frame 2 (right)
