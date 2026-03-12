@@ -2735,8 +2735,12 @@ def load_authorized_discord_ids() -> set[str]:
                 authorized_ids.add(line)
 
     return authorized_ids
+    
 def log_login_attempt(username: str, discord_id: str, approved: bool, note: str = "") -> None:
     timestamp_utc = datetime.now(timezone.utc).isoformat()
+
+    print(f"[DEBUG] entering log_login_attempt", flush=True)
+    print(f"[DEBUG] LOGIN_LOG_FILE={LOGIN_LOG_FILE}", flush=True)
 
     file_exists = LOGIN_LOG_FILE.exists()
 
@@ -2747,10 +2751,12 @@ def log_login_attempt(username: str, discord_id: str, approved: bool, note: str 
             writer.writerow(["timestamp_utc", "username", "discord_id", "approved", "note"])
 
         writer.writerow([timestamp_utc, username, discord_id, approved, note])
+        f.flush()
 
     print(
         f"[LOGIN ATTEMPT] time={timestamp_utc} "
-        f"user={username} id={discord_id} approved={approved} note={note}"
+        f"user={username} id={discord_id} approved={approved} note={note}",
+        flush=True
     )
 
 @server.route("/login", methods=["GET", "HEAD"])
@@ -2760,7 +2766,8 @@ def login():
         return ("", 200)
 
     redirect_uri = url_for("callback", _external=True)
-    print(f"[**LOGIN START**] path=/login method={request.method} remote_addr={request.remote_addr}")    
+    print(f"[**LOGIN START**] path=/login method={request.method} remote_addr={request.remote_addr}")   
+    flush=True
     return discord.authorize_redirect(redirect_uri)
     
 @server.route("/callback")
@@ -2768,8 +2775,10 @@ def callback():
     try:
         token = discord.authorize_access_token()
         user = discord.get("users/@me").json()
+        print("[DEBUG] callback reached after Discord user fetch", flush=True)
+        print(f"[DEBUG] username={user.get('username')} id={user.get('id')}", flush=True)
     except Exception as e:
-        print(f"[LOGIN ERROR] callback failed: {e}")
+        print(f"[LOGIN ERROR] callback failed: {e}", flush=True)
         return redirect("/login-failed")
 
     discord_id = str(user.get("id", "")).strip()
@@ -2778,6 +2787,9 @@ def callback():
     authorized_ids = load_authorized_discord_ids()
     is_approved = discord_id in authorized_ids
 
+    print(f"[DEBUG] authorized_ids_count={len(authorized_ids)}", flush=True)
+    print(f"[DEBUG] is_approved={is_approved}", flush=True)
+
     session["discord_user"] = {
         "id": discord_id,
         "username": username,
@@ -2785,7 +2797,7 @@ def callback():
     session["authorized"] = is_approved
 
     note = "approved" if is_approved else "pending_approval"
-    
+
     log_login_attempt(
         username=username,
         discord_id=discord_id,
@@ -2797,7 +2809,7 @@ def callback():
         return redirect("/")
 
     return redirect("/not-approved")
-
+    
 @server.route("/login-failed")
 def login_failed():
     return """
@@ -2807,12 +2819,12 @@ def login_failed():
     """
     
 # PRODUCTION
-    if discord_id in ALLOWED_DISCORD_IDS:
-        session["authorized"] = True
-        return redirect("/")
+    # if discord_id in ALLOWED_DISCORD_IDS:
+    #     session["authorized"] = True
+    #     return redirect("/")
 
-    session["authorized"] = False
-    return redirect("/not-approved")
+    # session["authorized"] = False
+    # return redirect("/not-approved")
 
 # TESTING
     # session["authorized"] = True
