@@ -24,14 +24,22 @@ import json
 from dash import Dash, html, dcc, dash_table, Input, Output, State, no_update, callback_context
 from dash.dependencies import ALL
 
-from flask import Flask, session, redirect, url_for, request
+# Related to User Authorization
+
+from flask import Flask, session, redirect, url_for, request, make_response
 from authlib.integrations.flask_client import OAuth
+
+import csv
+from datetime import datetime, timezone
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # ---------- CONFIG ----------
 
-DATA_DIR  = Path(".")  # adjust if you keep CSVs elsewhere
-CLASS_DIR = DATA_DIR / Path("classes")
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR
+# DATA_DIR  = Path(".")  # adjust if you keep CSVs elsewhere
 
+CLASS_DIR = DATA_DIR / Path("classes")
 HERO_CODES_CSV = DATA_DIR / "db_hero_codes.csv"
 SKILL_CODES_CSV = DATA_DIR / "db_skill_codes.csv"
 SKILL_SORT_ORDER_CSV = DATA_DIR / "db_skill_sort_order.csv"
@@ -39,6 +47,12 @@ SKILL_INCOMPAT_CSV = DATA_DIR / "db_skill_codes_incompat.csv"
 DETAIL_ICON_PATH = DATA_DIR / "assets" / "detail_icons"
 TREND_ICON_PATH = DATA_DIR / "assets" / "trend_icons"
 TAB5_MD_PATH = DATA_DIR / "assets" / "using_this_tool.md"
+
+DETAIL_ICON_URL = "/assets/detail_icons"
+TREND_ICON_URL = "/assets/trend_icons"
+
+AUTHORIZED_USERS_FILE = BASE_DIR / "authorized_users.txt"
+LOGIN_LOG_FILE = BASE_DIR / "login_attempts.csv"
 
 def get_class_bundle_dir(class_code: str) -> Path:
     return CLASS_DIR / str(class_code).strip()
@@ -731,7 +745,7 @@ def detail_icon(filename, class_name="detail-icon", title=None):
     Used for quality & special icons in the detail view.
     """
     return html.Img(
-        src=f"{DETAIL_ICON_PATH}/{filename}",
+        src=f"{DETAIL_ICON_URL}/{filename}",
         className=class_name,
         title=title or filename,
     )
@@ -982,7 +996,7 @@ def get_trend_icons(row):
 
     return [
         html.Img(
-            src=f"/assets/trend_icons/{fname}",
+            src=f"{TREND_ICON_URL}/{fname}",
             className="trend-icon",   # <-- IMPORTANT: image class
             title=title,
         )
@@ -2663,6 +2677,16 @@ def tab5_body_markdown():
 server = Flask(__name__)
 server.secret_key = os.environ["FLASK_SECRET_KEY"]
 
+# Tell Flask it is behind Render's proxy
+server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+# Safer session cookie settings for OAuth redirect flows
+server.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
+
 app = Dash(
     __name__,
     server=server,
@@ -2681,29 +2705,107 @@ discord = oauth.register(
     client_kwargs={"scope": "identify"},
 )
 
-ALLOWED_DISCORD_IDS = {
-    "779058036936802384",
-}
+# ALLOWED_DISCORD_IDS = {
+#     "779058036936802384", # Peetee1138
+# }
 
-@server.route("/login")
+def load_authorized_discord_ids() -> set[str]:
+    if not AUTHORIZED_USERS_FILE.exists():
+        return set()
+
+    authorized_ids = set()
+
+    with open(AUTHORIZED_USERS_FILE, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+
+            # skip blank lines
+            if not line:
+                continue
+
+            # skip full-line comments
+            if line.startswith("#"):
+                continue
+
+            # allow inline comments, e.g.:
+            # 123456789012345678  # Peetee1138
+            line = line.split("#", 1)[0].strip()
+
+            if line:
+                authorized_ids.add(line)
+
+    return authorized_ids
+def log_login_attempt(username: str, discord_id: str, approved: bool, note: str = "") -> None:
+    timestamp_utc = datetime.now(timezone.utc).isoformat()
+
+    file_exists = LOGIN_LOG_FILE.exists()
+
+    with open(LOGIN_LOG_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        if not file_exists:
+            writer.writerow(["timestamp_utc", "username", "discord_id", "approved", "note"])
+
+        writer.writerow([timestamp_utc, username, discord_id, approved, note])
+
+    print(
+        f"[LOGIN ATTEMPT] time={timestamp_utc} "
+        f"user={username} id={discord_id} approved={approved} note={note}"
+    )
+
+@server.route("/login", methods=["GET", "HEAD"])
 def login():
-    redirect_uri = url_for("callback", _external=True)
-    return discord.authorize_redirect(redirect_uri)
+    # Ignore HEAD requests so they don't create a fake OAuth state
+    if request.method == "HEAD":
+        return ("", 200)
 
+    redirect_uri = url_for("callback", _external=True)
+    print(f"[**LOGIN START**] path=/login method={request.method} remote_addr={request.remote_addr}")    
+    return discord.authorize_redirect(redirect_uri)
+    
 @server.route("/callback")
 def callback():
-    token = discord.authorize_access_token()
-    user = discord.get("users/@me").json()
+    try:
+        token = discord.authorize_access_token()
+        user = discord.get("users/@me").json()
+    except Exception as e:
+        print(f"[LOGIN ERROR] callback failed: {e}")
+        return redirect("/login-failed")
 
-    print("DISCORD USER:", user)  # temporary, so we can see your ID locally
+    discord_id = str(user.get("id", "")).strip()
+    username = user.get("username", "unknown")
 
-    discord_id = user["id"]
+    authorized_ids = load_authorized_discord_ids()
+    is_approved = discord_id in authorized_ids
 
     session["discord_user"] = {
         "id": discord_id,
-        "username": user.get("username"),
+        "username": username,
     }
+    session["authorized"] = is_approved
 
+    note = "approved" if is_approved else "pending_approval"
+    
+    log_login_attempt(
+        username=username,
+        discord_id=discord_id,
+        approved=is_approved,
+        note=note,
+    )
+
+    if is_approved:
+        return redirect("/")
+
+    return redirect("/not-approved")
+
+@server.route("/login-failed")
+def login_failed():
+    return """
+    <h3>Login failed</h3>
+    <p>Your login session expired or got out of sync. Please try again.</p>
+    <p><a href="/login">Try Discord login again</a></p>
+    """
+    
 # PRODUCTION
     if discord_id in ALLOWED_DISCORD_IDS:
         session["authorized"] = True
@@ -2720,9 +2822,12 @@ def callback():
 def not_approved():
     return """
     <h3>Thanks for signing in.</h3>
-    <p>This alpha is currently limited to approved testers.</p>
+    <p>Your login request is pending approval for this alpha.</p>
+    <p>Please ping me on Discord if you'd like a reminder added.</p>
+    <p>Once I approve your Discord ID, you can log in again and should get access.</p>
+    <p><a href="/login">Try again</a></p>
     """
-
+    
 @server.route("/logout")
 def logout():
     session.clear()
@@ -2730,7 +2835,13 @@ def logout():
 
 @server.before_request
 def protect_app():
-    public_paths = {"/login", "/callback", "/not-approved", "/logout"}
+    public_paths = {
+        "/login",
+        "/callback",
+        "/not-approved",
+        "/logout",
+        "/login-failed",
+    }
 
     if request.path in public_paths:
         return
@@ -2748,7 +2859,7 @@ def protect_app():
 
     if not session.get("authorized"):
         return redirect("/login")
-
+        
 # SERVER INFORMATION - Activate below for _deploy versions
 server = app.server
 app.title = "Skills UI — Shop Titans Skills Ratings - PoC"

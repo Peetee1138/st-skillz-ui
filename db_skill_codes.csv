@@ -1,6 +1,6 @@
 full_name,short_name,rarity,skill_id
 Acrobatics (+25% EVA),Acr,Common,0
-Adept,Ade,Epic,1
+"Adept (+30% Atk. +250% Atk with Cat, Ins, Sta, Wan)",Ade,Epic,1
 All Natural (+30% Crit Chance & +100% Crit Damage),All,Rare,2
 Antimagic Net (+120% ATK & +12% EVA),Ant,Rare,3
 Arcane Blast (+130% ATK),Arc,Common,4
@@ -48,7 +48,7 @@ Mage Armor (+80% ATK & +40% DEF),MaA,Common,45
 Magic Darts (+110% ATK),MaD,Common,46
 Maintenance (+30% bonus stats from EQ & -40% Break Chance),Mai,Common,47
 Mana Shield (+120% ATK & +65% DEF),Man,Epic,48
-Marksman,Mar,Epic,49
+"Marksman (+8 EVA. +250 Atk with Bow, Cro, Gun)",Mar,Epic,49
 On Guard (+90% DEF & +100% chance to survive one fatal blow),OnG,Common,50
 Parry (+50% ATK & +75% DEF),Par,Common,51
 Perfect Form (+150% ATK & +50% DEF),PFr,Epic,52
@@ -74,5 +74,5 @@ Throw Daggers (+90% ATK & +12% EVA),Thr,Rare,71
 Toughness (+50% HP & -20% Resting Time),Tou,Rare,72
 Wall of Force (+90% ATK & +60% DEF),Wal,Rare,73
 Wand Master (+200% Attack with Wand),Wan,Common,74
-Warlord,War,Epic,75
+"Warlord (+20% HP. +250% Atk with Axe, Dag, Mac, Spe, Swo)",War,Epic,75
 Whirlwind Attack (+140% ATK & +12% Crit Chance),Whi,Epic,76

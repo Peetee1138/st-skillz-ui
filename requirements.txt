@@ -4,3 +4,4 @@ numpy
 plotly
 dash-bootstrap-components
 gunicorn
+Authlib
