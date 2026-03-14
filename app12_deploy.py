@@ -1,4 +1,4 @@
-# app11.py - v0.11
+# app12.py - v0.12
 #   0.2  - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
 #        - initial deployment to GitHub / OnRender
 #        - transition to .npz for 
@@ -11,6 +11,7 @@
 #   0.9  - Clean up and move to .npy for data efficency, add Using this Tool
 #   0.10 - Add "tab 4" for Class Info
 #   0.11 - Add Discord login
+#   0.12 - (from 11a_deploy) tweaks based on Alpha Feeedback
 
 import os
 from pathlib import Path
@@ -3425,10 +3426,15 @@ def make_layout_tab4():
             html.H4("Class Summary", style=TITLE_BANNER_STYLE),
             html.Div(
                 [
-                    html.Span("Tips: ", style={"fontWeight": "bold"}),
-                    html.Span("Click the Key Skill to open Single Skill Info. "),
-                    html.Span("Click an Example Core to open the 2-Skill Explorer. "),
-                    html.Span("Click an Example Build to open Skill Combo Detail."),
+                    html.Span("Using this table: ", style={"fontWeight": "bold"}),
+                    html.Span("Key Skill: ", style={"fontWeight": "bold"}),
+                    html.Span("Skill with the overall highest-rated combinations based on overall data. "),
+                    html.Span("Example Cores: ", style={"fontWeight": "bold"}),
+                    html.Span("To help you explore, a couple of strong 2-skill cores to consider. "),
+                    html.Br(),
+                    html.Span("Builds: ", style={"fontWeight": "bold"}),
+                    html.Span("Based on the data, Apex = the highest Rated build, "),
+                    html.Span("Ex. 1 = strong build with mostly uncommon skills, Ex. 2 = good build with mostly common skills."),
                 ],
                 style={"fontSize": "11px", "marginBottom": "8px"},
             ),
