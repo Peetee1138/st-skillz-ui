@@ -30,7 +30,9 @@ from dash.dependencies import ALL
 from flask import Flask, session, redirect, url_for, request, make_response
 from authlib.integrations.flask_client import OAuth
 
+
 import csv
+import requests
 from datetime import datetime, timezone
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -2704,6 +2706,7 @@ discord = oauth.register(
     authorize_url="https://discord.com/oauth2/authorize",
     api_base_url="https://discord.com/api/",
     client_kwargs={"scope": "identify"},
+    token_endpoint_auth_method="client_secret_post",
 )
 
 # ALLOWED_DISCORD_IDS = {
@@ -2775,11 +2778,27 @@ def login():
 def callback():
     try:
         token = discord.authorize_access_token()
-        user = discord.get("users/@me").json()
-        print("[DEBUG] callback reached after Discord user fetch", flush=True)
+        print(f"[DEBUG] token keys={list(token.keys())}", flush=True)
+        print(f"[DEBUG] token_type={token.get('token_type')}", flush=True)
+
+        access_token = token.get("access_token")
+        if not access_token:
+            print("[LOGIN ERROR] No access_token returned from Discord", flush=True)
+            return redirect("/login-failed")
+
+        user_resp = requests.get(
+            "https://discord.com/api/users/@me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        user_resp.raise_for_status()
+        user = user_resp.json()
+
         print(f"[DEBUG] username={user.get('username')} id={user.get('id')}", flush=True)
+
     except Exception as e:
         print(f"[LOGIN ERROR] callback failed: {e}", flush=True)
+        session.clear()
         return redirect("/login-failed")
 
     discord_id = str(user.get("id", "")).strip()
@@ -2787,9 +2806,6 @@ def callback():
 
     authorized_ids = load_authorized_discord_ids()
     is_approved = discord_id in authorized_ids
-
-    print(f"[DEBUG] authorized_ids_count={len(authorized_ids)}", flush=True)
-    print(f"[DEBUG] is_approved={is_approved}", flush=True)
 
     session["discord_user"] = {
         "id": discord_id,
@@ -2810,13 +2826,15 @@ def callback():
         return redirect("/")
 
     return redirect("/not-approved")
-    
+
 @server.route("/login-failed")
 def login_failed():
+    session.clear()
     return """
     <h3>Login failed</h3>
-    <p>Your login session expired or got out of sync. Please try again.</p>
-    <p><a href="/login">Try Discord login again</a></p>
+    <p>Your Discord login session got out of sync.</p>
+    <p>Please close this tab, then try again from the login link.</p>
+    <p><a href="/login">Start Discord login again</a></p>
     """
     
 # PRODUCTION
