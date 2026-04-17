@@ -1,4 +1,4 @@
-# app12.py - v0.12
+# app13.py - v0.14
 #   0.2  - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
 #        - initial deployment to GitHub / OnRender
 #        - transition to .npz for 
@@ -12,6 +12,8 @@
 #   0.10 - Add "tab 4" for Class Info
 #   0.11 - Add Discord login
 #   0.12 - (from 11a_deploy) tweaks based on Alpha Feeedback
+#   0.13 - Add enhancements to Tab 1 (selection of skills), add whatif (Frame 4) to tab2 (Skill Combo Detail)
+#   0.14 - [abandoned: Reddit login] Add 3-free logins to give time to add users to white list
 
 import os
 from pathlib import Path
@@ -47,6 +49,7 @@ HERO_CODES_CSV = DATA_DIR / "db_hero_codes.csv"
 SKILL_CODES_CSV = DATA_DIR / "db_skill_codes.csv"
 SKILL_SORT_ORDER_CSV = DATA_DIR / "db_skill_sort_order.csv"
 SKILL_INCOMPAT_CSV = DATA_DIR / "db_skill_codes_incompat.csv"
+SLOT_ODDS_CSV = DATA_DIR / "db_slot_odds.csv"
 DETAIL_ICON_PATH = DATA_DIR / "assets" / "detail_icons"
 TREND_ICON_PATH = DATA_DIR / "assets" / "trend_icons"
 TAB5_MD_PATH = DATA_DIR / "assets" / "using_this_tool.md"
@@ -56,6 +59,8 @@ TREND_ICON_URL = "/assets/trend_icons"
 
 AUTHORIZED_USERS_FILE = BASE_DIR / "authorized_users.txt"
 LOGIN_LOG_FILE = BASE_DIR / "login_attempts.csv"
+
+FREE_USES_ALLOWED = 3
 
 def get_class_bundle_dir(class_code: str) -> Path:
     return CLASS_DIR / str(class_code).strip()
@@ -330,6 +335,40 @@ def load_skill_sort_order():
         mapping[code] = skills
     return mapping
 
+def load_slot_odds():
+    """
+    Load db_slot_odds.csv into:
+      slot_odds_map = {
+          1: {"Common": 0.833, "Rare": 0.125, "Epic": 0.042},
+          ...
+      }
+
+    CSV expected columns:
+      slot, pct_com, pct_rare, pct_epic
+    Percentages in file are 0-100 scale.
+    """
+    df = pd.read_csv(SLOT_ODDS_CSV)
+
+    req = {"slot", "pct_com", "pct_rare", "pct_epic"}
+    missing = req - set(df.columns)
+    if missing:
+        raise ValueError(f"[load_slot_odds] missing columns: {sorted(missing)}")
+
+    out = {}
+    for _, row in df.iterrows():
+        try:
+            slot = int(row["slot"])
+        except Exception:
+            continue
+
+        out[slot] = {
+            "Common": float(row["pct_com"]) / 100.0,
+            "Rare":   float(row["pct_rare"]) / 100.0,
+            "Epic":   float(row["pct_epic"]) / 100.0,
+        }
+
+    return out
+
 def parse_skill_codes(skill_code: str):
     """
     Example: 'G2AcrAllAntAss' -> ('G2', ['Acr','All','Ant','Ass'])
@@ -350,6 +389,7 @@ def canonical_skill_string(s1, s2, s3, s4) -> str:
 hero_codes_df = load_hero_codes()
 skill_name_map, skill_rarity_map, skill_code_to_id, skill_id_to_code = load_skill_metadata()
 skill_sort_order = load_skill_sort_order()
+slot_odds_map = load_slot_odds()
 
 _class_bundle_cache = {}
 _single_skill_assess_cache = {}
@@ -715,33 +755,7 @@ def build_skill_order_from_assess(df_assess: pd.DataFrame, skills_in_scope: list
     missing = [s for s in skills_in_scope if s not in set(ordered)]
     return ordered + sorted(missing)
 
-
-def find_combo_row(df_all: pd.DataFrame, class_code: str, skills: list[str]):
-    """
-    Find the row in df_all for a given class + 4-skill combo.
-
-    The data uses a canonical skill_key = ''.join(sorted(codes)),
-    so we must also sort the selected codes before matching.
-    """
-    if df_all is None or not class_code or any(s is None for s in skills):
-        return None
-
-    # ✅ canonical key: alphabetized 4-skill string
-    key = "".join(sorted(skills))
-
-    matches = df_all[
-        (df_all["class_code"] == class_code) &
-        (df_all["skill_key"] == key)
-    ]
-
-    matches = np.where(codes == full_code)[0]
-    if matches.size == 0:
-        print(f"[find_combo_index] No exact match for {full_code}")
-        return None
-        
-    # In theory there should be exactly one; take the first
-    return matches.iloc[0]
-
+    
 def detail_icon(filename, class_name="detail-icon", title=None):
     """
     Small helper to render an <img> from assets/detail_icons.
@@ -1577,6 +1591,437 @@ def single_skill_sparkline(nq, sub80, pct80_95, pct95):
         )
 
     return html.Div(segments, className="single-skill-sparkline")
+
+# -------------------------------
+# Tab2 Frame4: What-If Reroll Model
+# -------------------------------
+
+def fmt_pct_01(p):
+    """0-1 -> '99.6%' style string."""
+    if p is None or pd.isna(p):
+        return "—"
+    try:
+        return f"{float(p) * 100.0:.1f}%"
+    except Exception:
+        return "—"
+
+def fmt_pct_100(p):
+    """0-100 -> '12.5%' style string."""
+    if p is None or pd.isna(p):
+        return "—"
+    try:
+        return f"{float(p):.1f}%"
+    except Exception:
+        return "—"
+
+def fmt_expected_rolls(prob_01):
+    """Expected rolls = 1/p."""
+    try:
+        p = float(prob_01)
+    except Exception:
+        return "—"
+
+    if p <= 0:
+        return "—"
+
+    return f"{(1.0 / p):.1f}"
+
+def get_reroll_slot_options(s1, s2, s3, s4):
+    """
+    Build dropdown options in the exact current Frame 1 order.
+    Example:
+      S1: All
+      S2: Stu
+      S3: Des
+      S4: Whi
+    """
+    vals = [s1, s2, s3, s4]
+    out = []
+
+    for idx, sc in enumerate(vals, start=1):
+        if not sc:
+            continue
+        out.append({
+            "label": f"S{idx}: {sc}",
+            "value": idx,
+        })
+
+    return out
+
+def get_valid_reroll_targets(class_code: str, selected_skills: list[str], reroll_slot: int) -> list[str]:
+    """
+    Valid reroll targets for a given slot:
+      - base skills for class
+      - exclude the skill being replaced
+      - exclude incompatibles to the other 3 fixed skills
+      - exclude duplicates already present in the other 3 fixed skills
+    """
+    if not class_code or not selected_skills or len(selected_skills) != 4 or not reroll_slot:
+        return []
+
+    if reroll_slot not in (1, 2, 3, 4):
+        return []
+
+    base_skills = get_base_skills_for_class(class_code)
+    if not base_skills:
+        return []
+
+    idx = reroll_slot - 1
+    skill_being_replaced = selected_skills[idx]
+    fixed_others = [s for i, s in enumerate(selected_skills) if i != idx and s]
+
+    pool = filtered_skill_pool(base_skills, fixed_others)
+
+    # remove duplicates already present in the other 3 slots
+    used_elsewhere = set(fixed_others)
+    pool = [s for s in pool if s not in used_elsewhere]
+
+    # explicitly exclude the skill being replaced
+    pool = [s for s in pool if s != skill_being_replaced]
+
+    return sorted(set(pool))
+
+def calc_target_roll_probability(class_code: str, selected_skills: list[str], reroll_slot: int, target_skill: str) -> float:
+    """
+    One-reroll probability of hitting exactly target_skill:
+
+      P(target) =
+          P(rarity for slot)
+          *
+          1 / (# valid skills of that rarity for this slot)
+
+    VALID skills are:
+      - valid for class
+      - compatible with other 3 fixed skills
+      - not already used in the other 3 fixed skills
+      - not the skill being replaced
+    """
+    if not class_code or not selected_skills or len(selected_skills) != 4:
+        return 0.0
+
+    if reroll_slot not in (1, 2, 3, 4):
+        return 0.0
+
+    if not target_skill:
+        return 0.0
+
+    valid_targets = get_valid_reroll_targets(class_code, selected_skills, reroll_slot)
+    if target_skill not in valid_targets:
+        return 0.0
+
+    target_rarity = str(skill_rarity_map.get(target_skill, "")).strip()
+    if target_rarity not in ("Common", "Rare", "Epic"):
+        return 0.0
+
+    rarity_odds = slot_odds_map.get(int(reroll_slot), {})
+    p_rarity = float(rarity_odds.get(target_rarity, 0.0))
+    if p_rarity <= 0:
+        return 0.0
+
+    same_rarity_targets = [
+        sc for sc in valid_targets
+        if str(skill_rarity_map.get(sc, "")).strip() == target_rarity
+    ]
+    n_same_rarity = len(same_rarity_targets)
+    if n_same_rarity <= 0:
+        return 0.0
+
+    return p_rarity / n_same_rarity
+
+def build_reroll_result_row(class_code: str, selected_skills: list[str], reroll_slot: int, target_skill: str) -> dict:
+    """
+    Build one modeled result row for Table B.
+    """
+    out_skills = list(selected_skills)
+    out_skills[reroll_slot - 1] = target_skill
+
+    bundle = get_class_bundle(class_code)
+    row_idx = find_combo_index(bundle, class_code, out_skills) if bundle is not None else None
+    if row_idx is None:
+        return {
+            "skill_list": out_skills,
+            "raw_rating": None,
+            "rating_pctile": None,
+            "delta_rating": None,
+            "delta_pctile": None,
+            "roll_prob": calc_target_roll_probability(class_code, selected_skills, reroll_slot, target_skill),
+            "changed_slot": reroll_slot,
+            "target_skill": target_skill,
+        }
+
+    modeled = build_combo_row(bundle, class_code, row_idx)
+
+    # current build lookup
+    current_idx = find_combo_index(bundle, class_code, selected_skills)
+    current_row = build_combo_row(bundle, class_code, current_idx) if current_idx is not None else None
+
+    raw_rating = modeled.get("raw_rating")
+    rating_pctile = modeled.get("rating_pctile")
+
+    delta_rating = None
+    delta_pctile = None
+
+    if current_row is not None:
+        try:
+            delta_rating = float(raw_rating) - float(current_row["raw_rating"])
+        except Exception:
+            delta_rating = None
+
+        try:
+            delta_pctile = float(rating_pctile) - float(current_row["rating_pctile"])
+        except Exception:
+            delta_pctile = None
+
+    return {
+        "skill_list": out_skills,
+        "raw_rating": raw_rating,
+        "rating_pctile": rating_pctile,
+        "delta_rating": delta_rating,
+        "delta_pctile": delta_pctile,
+        "roll_prob": calc_target_roll_probability(class_code, selected_skills, reroll_slot, target_skill),
+        "changed_slot": reroll_slot,
+        "target_skill": target_skill,
+    }
+
+def make_skill_chip(sc: str, changed: bool = False):
+    """
+    Compact icon + 3-letter code chip.
+    """
+    if not sc:
+        return html.Span("—")
+
+    border = "2px solid #c0392b" if changed else "1px solid #999"
+    bg = "#fdecea" if changed else "#f7f7f7"
+
+    return html.Div(
+        [
+            html.Img(
+                src=f"/assets/skill_icons/{sc}.png",
+                title=get_full_skill_name(sc),
+                style={"height": "16px", "width": "16px"},
+            ),
+            html.Span(sc, style={"fontWeight": "bold", "fontSize": "11px"}),
+        ],
+        style={
+            "display": "inline-flex",
+            "alignItems": "center",
+            "gap": "4px",
+            "padding": "2px 3px",
+            "border": border,
+            "borderRadius": "5px",
+            "backgroundColor": bg,
+            "whiteSpace": "nowrap",
+            "lineHeight": "1.0",
+        },
+    )
+    
+def build_tab2_frame4_current_summary(class_code, s1, s2, s3, s4):
+    """
+    Table A: current build summary.
+    """
+    if not class_code or not s1 or not s2 or not s3 or not s4:
+        return html.Div("Select a full 4-skill build to model rerolls.")
+
+    bundle = get_class_bundle(class_code)
+    if bundle is None:
+        return html.Div(f"No data available for class {class_code}.")
+
+    skills_in_order = [s1, s2, s3, s4]
+    row_idx = find_combo_index(bundle, class_code, skills_in_order)
+    if row_idx is None:
+        return html.Div("Current build was not found in the class bundle.")
+
+    row = build_combo_row(bundle, class_code, row_idx)
+
+    header_style = {
+        "backgroundColor": "#34495e",
+        "color": "white",
+        "padding": "4px 3px",
+        "border": "1px solid #001f3f",
+        "textAlign": "center",
+        "fontWeight": "bold",
+    }
+    cell_style = {
+        "padding": "4px 3px",
+        "border": "1px solid #001f3f",
+        "textAlign": "center",
+        "verticalAlign": "middle",
+        "fontSize": "14px",
+    }
+    
+    return html.Table(
+        [
+            html.Thead(
+                html.Tr(
+                    [
+                        html.Th("S1", style=header_style),
+                        html.Th("S2", style=header_style),
+                        html.Th("S3", style=header_style),
+                        html.Th("S4", style=header_style),
+                        html.Th("Rating", style=header_style),
+                        html.Th("%ile", style=header_style),
+                    ]
+                )
+            ),
+            html.Tbody(
+                [
+                    html.Tr(
+                        [
+                            html.Td(make_skill_chip(s1), style=cell_style),
+                            html.Td(make_skill_chip(s2), style=cell_style),
+                            html.Td(make_skill_chip(s3), style=cell_style),
+                            html.Td(make_skill_chip(s4), style=cell_style),
+                            html.Td(f"{float(row['raw_rating']):.1f}", style=cell_style),
+                            html.Td(fmt_pct_01(row["rating_pctile"]), style=cell_style),
+                        ]
+                    )
+                ]
+            ),
+        ],
+        style={
+            "borderCollapse": "collapse",
+            "width": "100%",
+            "minWidth": "640px",
+        }
+    )
+
+def build_tab2_frame4_results_table(class_code, s1, s2, s3, s4, reroll_slot, target_skills):
+    """
+    Table B: modeled outcomes.
+    """
+    if not class_code or not s1 or not s2 or not s3 or not s4:
+        return html.Div("Complete the build above to see modeled outcomes.")
+
+    if not reroll_slot:
+        return html.Div("Select a slot to reroll.")
+
+    if not target_skills:
+        return html.Div("Select up to 3 target skills to model.")
+
+    selected_skills = [s1, s2, s3, s4]
+    results = [
+        build_reroll_result_row(class_code, selected_skills, reroll_slot, t)
+        for t in target_skills[:3]
+    ]
+
+    # sort best rating first, blanks last
+    results = sorted(
+        results,
+        key=lambda r: (r["raw_rating"] is None, -(r["raw_rating"] or -9999)),
+    )
+
+    header_style = {
+        "backgroundColor": "#2e8b57",
+        "color": "white",
+        "padding": "4px 6px",
+        "border": "1px solid #1f5f3b",
+        "textAlign": "center",
+        "fontWeight": "bold",
+        "fontSize": "12px",
+    }
+    cell_style = {
+        "padding": "4px 3px",
+        "border": "1px solid #1f5f3b",
+        "textAlign": "center",
+        "verticalAlign": "middle",
+        "fontSize": "12px",
+    }
+
+    body_rows = []
+    for r in results:
+        skills = r["skill_list"]
+        changed_slot = r["changed_slot"]
+
+        body_rows.append(
+            html.Tr(
+                [
+                    html.Td(make_skill_chip(skills[0], changed=(changed_slot == 1)), style=cell_style),
+                    html.Td(make_skill_chip(skills[1], changed=(changed_slot == 2)), style=cell_style),
+                    html.Td(make_skill_chip(skills[2], changed=(changed_slot == 3)), style=cell_style),
+                    html.Td(make_skill_chip(skills[3], changed=(changed_slot == 4)), style=cell_style),
+                    html.Td("—" if r["raw_rating"] is None else f"{float(r['raw_rating']):.1f}", style=cell_style),
+                    html.Td(fmt_pct_01(r["rating_pctile"]), style=cell_style),
+                    html.Td("—" if r["delta_rating"] is None else f"{float(r['delta_rating']):+.1f}", style=cell_style),
+                    html.Td("—" if r["delta_pctile"] is None else f"{float(r['delta_pctile']) * 100.0:+.1f}%", style=cell_style),
+                    html.Td(fmt_pct_100(float(r["roll_prob"]) * 100.0), style=cell_style),
+                    html.Td(fmt_expected_rolls(r["roll_prob"]), style=cell_style),
+                ]
+            )
+        )
+
+    cumulative_prob = calc_any_target_roll_probability(results)
+    cumulative_exp_rolls = fmt_expected_rolls(cumulative_prob)
+
+    summary_label_style = {
+        **cell_style,
+        "textAlign": "right",
+        "fontWeight": "bold",
+        "backgroundColor": "#eef6f0",
+    }
+
+    summary_value_style = {
+        **cell_style,
+        "fontWeight": "bold",
+        "backgroundColor": "#eef6f0",
+    }
+
+    body_rows.append(
+        html.Tr(
+            [
+                html.Td("", style=cell_style),
+                html.Td("", style=cell_style),
+                html.Td("", style=cell_style),
+                html.Td("", style=cell_style),
+                html.Td("", style=cell_style),
+                html.Td("", style=cell_style),
+                html.Td("", style=cell_style),
+                html.Td("Any Selected Target:", style=summary_label_style),
+                html.Td(fmt_pct_100(cumulative_prob * 100.0), style=summary_value_style),
+                html.Td(cumulative_exp_rolls, style=summary_value_style),
+            ]
+        )
+    )
+
+    return html.Table(
+        [
+            html.Thead(
+                html.Tr(
+                    [
+                        html.Th("S1", style=header_style),
+                        html.Th("S2", style=header_style),
+                        html.Th("S3", style=header_style),
+                        html.Th("S4", style=header_style),
+                        html.Th("Rating", style=header_style),
+                        html.Th("%ile", style=header_style),
+                        html.Th("Δ Rating", style=header_style),
+                        html.Th("Δ %ile", style=header_style),
+                        html.Th("Roll %", style=header_style),
+                        html.Th("Exp. Rolls", style=header_style),
+                    ]
+                )
+            ),
+            html.Tbody(body_rows),
+        ],
+        style={
+            "borderCollapse": "collapse",
+            "width": "100%",
+            "minWidth": "860px",
+        }
+    )
+    
+def calc_any_target_roll_probability(results: list[dict]) -> float:
+    """
+    Because each target skill is a distinct mutually exclusive reroll outcome,
+    cumulative one-roll probability is the sum of the individual probabilities.
+    """
+    total = 0.0
+    for r in results:
+        try:
+            total += float(r.get("roll_prob", 0.0))
+        except Exception:
+            pass
+    return total
+    
 
 # -------------------------------
 # Tab2 Frame3: Class rating histogram columns + selected build percentile
@@ -2673,6 +3118,8 @@ def tab5_body_markdown():
 
 # ---------- DASH APP ----------
 
+# --- Login / Authorized Users
+
 # OLD
 # app = Dash(__name__, suppress_callback_exceptions=True)
 
@@ -2739,6 +3186,59 @@ def load_authorized_discord_ids() -> set[str]:
                 authorized_ids.add(line)
 
     return authorized_ids
+
+def finalize_login(discord_id: str, username: str):
+    authorized_ids = load_authorized_discord_ids()
+    is_approved = discord_id in authorized_ids
+
+    session["discord_user"] = {
+        "id": discord_id,
+        "username": username,
+    }
+
+    # Approved users always get in
+    if is_approved:
+        session["authorized"] = True
+        session["guest_mode"] = False
+        session["guest_uses"] = 0
+
+        log_login_attempt(
+            username=username,
+            discord_id=discord_id,
+            approved=True,
+            note="approved",
+        )
+        return redirect("/")
+
+    # Not approved yet -> allow a few free uses
+    guest_uses = int(session.get("guest_uses", 0))
+
+    if guest_uses < FREE_USES_ALLOWED:
+        guest_uses += 1
+        session["guest_uses"] = guest_uses
+        session["authorized"] = True
+        session["guest_mode"] = True
+
+        log_login_attempt(
+            username=username,
+            discord_id=discord_id,
+            approved=False,
+            note=f"guest_use_{guest_uses}_of_{FREE_USES_ALLOWED}",
+        )
+        return redirect("/")
+
+    # Free uses exhausted
+    session["authorized"] = False
+    session["guest_mode"] = False
+
+    log_login_attempt(
+        username=username,
+        discord_id=discord_id,
+        approved=False,
+        note="guest_limit_reached",
+    )
+    return redirect("/not-approved")
+    
     
 def log_login_attempt(username: str, discord_id: str, approved: bool, note: str = "") -> None:
     timestamp_utc = datetime.now(timezone.utc).isoformat()
@@ -2770,8 +3270,11 @@ def login():
         return ("", 200)
 
     redirect_uri = url_for("callback", _external=True)
-    print(f"[**LOGIN START**] path=/login method={request.method} remote_addr={request.remote_addr}")   
-    flush=True
+    print(
+        f"[LOGIN START] path=/login method={request.method} remote_addr={request.remote_addr}",
+        flush=True
+    )
+    
     return discord.authorize_redirect(redirect_uri)
     
 @server.route("/callback")
@@ -2804,28 +3307,10 @@ def callback():
     discord_id = str(user.get("id", "")).strip()
     username = user.get("username", "unknown")
 
-    authorized_ids = load_authorized_discord_ids()
-    is_approved = discord_id in authorized_ids
-
-    session["discord_user"] = {
-        "id": discord_id,
-        "username": username,
-    }
-    session["authorized"] = is_approved
-
-    note = "approved" if is_approved else "pending_approval"
-
-    log_login_attempt(
-        username=username,
+    return finalize_login(
         discord_id=discord_id,
-        approved=is_approved,
-        note=note,
+        username=username,
     )
-
-    if is_approved:
-        return redirect("/")
-
-    return redirect("/not-approved")
 
 @server.route("/login-failed")
 def login_failed():
@@ -2851,9 +3336,9 @@ def login_failed():
 
 @server.route("/not-approved")
 def not_approved():
-    return """
+    return f"""
     <h3>Thanks for signing in.</h3>
-    <p>Your login request is pending approval for this alpha.</p>
+    <p>You have used your {FREE_USES_ALLOWED} free guest logins for this alpha.</p>
     <p>Please ping me on Discord if you'd like a reminder added.</p>
     <p>Once I approve your Discord ID, you can log in again and should get access.</p>
     <p><a href="/login">Try again</a></p>
@@ -2891,8 +3376,11 @@ def protect_app():
     if not session.get("authorized"):
         return redirect("/login")
         
-# SERVER INFORMATION - Activate below for _deploy versions
-server = app.server
+# --- SERVER INFORMATION - Activate below for _deploy versions
+# server = app.server
+
+# --- Begin body of Dash app
+
 app.title = "Skills UI — Shop Titans Skills Ratings - PoC"
 
 def _is_available(val):
@@ -3031,7 +3519,15 @@ def make_layout_tab1():
                                 value="all",
                                 clearable=False,
                                 style={"width": "180px"},
-                            )
+                            ),
+                            html.Br(),
+                            html.Label("Exclude Skills (optional)"),
+                            dcc.Dropdown(
+                                id="heatmap-exclude-skills",
+                                multi=True,
+                                placeholder="Select skills to exclude...",
+                                style={"width": "250px"},
+                            ),
                         ],
                     ),
 
@@ -3168,6 +3664,7 @@ def make_layout_tab2():
     return html.Div(
         style={
             "margin": "10px 40px 10px 10px",
+            "paddingBottom": "180px",           
             "fontFamily": "Arial",
             "backgroundColor": APP_BG,
         },  
@@ -3215,7 +3712,16 @@ def make_layout_tab2():
                             ),
 
                             html.Br(),
-
+                            html.Div(
+                                "Put skills in slot order to enable What If... analysis",
+                                style={
+                                    "fontSize": "11px",
+                                    "fontStyle": "italic",
+                                    "color": "#555",
+                                    "marginBottom": "8px",
+                                },
+                            ),
+                            
                             # ----- Skill rows 1–4 -----
                             *[
                                 html.Div(
@@ -3245,7 +3751,25 @@ def make_layout_tab2():
                                     ]
                                 )
                                 for i in range(1, 5)
-                            ],
+                            ],  # ✅ IMPORTANT: close the list comprehension + comma
+                            
+                            # ✅ Now add your jump link as a separate element
+                            html.Div(
+                                [
+                                    html.A(
+                                        "Jump to What If...",
+                                        href="#tab2-whatif-anchor",
+                                        style={
+                                            "fontSize": "12px",
+                                            "fontWeight": "bold",
+                                            "color": "#0645AD",
+                                            "textDecoration": "underline",
+                                            "cursor": "pointer",
+                                        },
+                                    )
+                                ],
+                                style={"marginTop": "-6px", "marginBottom": "8px"},
+                            ),
                         ],
                     ),
 
@@ -3254,7 +3778,7 @@ def make_layout_tab2():
                         style={"flex": "1", "minWidth": "400px"},
                         children=[
                             html.H4(
-                                "Skill Combo Detail",
+                                "Skill Combo Detail (sorted alphabetically)",
                                 style=TITLE_BANNER_STYLE,
                             ),
                             html.Div(
@@ -3293,6 +3817,104 @@ def make_layout_tab2():
                 config={"displayModeBar": False},
                 style={"height": "500px", "width": "75%"},
             ),
+            # -------------------------------------------------------
+            # ROW 3: FRAME 4 (Bottom full-width chart)
+            # -------------------------------------------------------
+            html.Hr(),
+            html.Div(id="tab2-whatif-anchor"),
+            html.H4(
+                "What-If Reroll Model",
+                style={**TITLE_BANNER_STYLE, "borderRadius": "2px"},
+            ),
+            html.Div(
+                [
+                    html.Span("Use this section to test a reroll target for one slot. ", style={"fontSize": "11px"}),
+                    html.Span("Odds assume: first roll rarity by slot odds, then pick uniformly from valid skills of that rarity.", style={"fontSize": "11px"}),
+                ],
+                style={"marginBottom": "8px"},
+            ),
+
+            # Table A
+            html.Div(
+                style={
+                    "display": "flex",
+                    "justifyContent": "flex-start",
+                },
+                children=[
+                    html.Div(
+                        id="tab2-frame4-current-summary",
+                        style={
+                            "width": "60%",
+                            "minWidth": "520px",
+                            "border": "1px solid #ccc",
+                            "borderRadius": "4px",
+                            "padding": "8px",
+                            "marginBottom": "12px",
+                            "overflowX": "auto",
+                            "backgroundColor": PANEL_BG,
+                        },
+                    )
+                ]
+            ),
+            
+            # Controls
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flexWrap": "wrap",
+                    "gap": "16px",
+                    "alignItems": "flex-start",
+                    "marginBottom": "12px",
+                },
+                children=[
+                    html.Div(
+                        [
+                            html.Label("1) Select slot to reroll"),
+                            html.Div("\u00A0", style={"fontSize": "11px", "marginBottom": "4px"}),
+                            dcc.Dropdown(
+                                id="reroll-slot-dropdown",
+                                clearable=False,
+                                placeholder="Select slot...",
+                                style={"width": "220px"},
+                            ),
+                        ]
+                    ),
+                    html.Div(
+                        [
+                            html.Label("2) Select up to 3 target skills", style={"display": "block", "marginBottom": "2px"}),
+                            html.Div("Choose up to 3.", style={"fontSize": "11px", "color": "#555", "marginBottom": "4px"}),
+                            dcc.Dropdown(
+                                id="reroll-target-skills",
+                                multi=True,
+                                placeholder="Select target skills...",
+                                style={"width": "520px", "maxWidth": "100%"},
+                            ),
+                        ]
+                    )
+                ],
+            ),
+
+            # Table B
+            html.Div(
+                style={
+                    "display": "flex",
+                    "justifyContent": "flex-start",
+                },
+                children=[
+                    html.Div(
+                        id="tab2-frame4-results",
+                        style={
+                            "width": "60%",
+                            "minWidth": "700px",
+                            "border": "1px solid #ccc",
+                            "borderRadius": "4px",
+                            "padding": "8px",
+                            "overflowX": "auto",
+                            "backgroundColor": PANEL_BG,
+                        },
+                    )
+                ]
+            ),            
         ],
     )
 
@@ -3633,7 +4255,16 @@ def update_skill_dropdowns(class_code, s1, s2):
 
     return opts1, opts2, s1, s2
 
+@app.callback(
+    Output("heatmap-exclude-skills", "options"),
+    Input("hero-class", "value"),
+)
+def update_exclude_options(class_code):
+    if not class_code:
+        return []
 
+    base_skills = get_base_skills_for_class(class_code)
+    return [{"label": skill_label(s), "value": s} for s in sorted(base_skills)]
 
 @app.callback(
     Output("step3-title", "children"),
@@ -3645,9 +4276,10 @@ def update_skill_dropdowns(class_code, s1, s2):
     Input("skill1", "value"),
     Input("skill2", "value"),
     Input("heatmap-skill-filter", "value"),
+    Input("heatmap-exclude-skills", "value"),
     prevent_initial_call="initial_duplicate",
 )
-def update_outputs(class_code, skill1, skill2, skill_filter):
+def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     empty_fig = go.Figure()
 
     def build_titles():
@@ -3764,6 +4396,36 @@ def update_outputs(class_code, skill1, skill2, skill_filter):
         if len(filtered_axis) >= 2:
             axis_skills = filtered_axis
 
+    # --- CUSTOM EXCLUDE FILTER ---
+    if exclude_skills:
+        exclude_set = set(exclude_skills)
+        filtered_axis = [s for s in axis_skills if s not in exclude_set]
+    
+        if len(filtered_axis) >= 2:
+            axis_skills = filtered_axis
+    
+    # --- APPLY SAME FILTER TO TABLE (Frame 2) ---
+    axis_set = set(axis_skills)
+    
+    table_df_filtered = table_df[
+        table_df["s3"].isin(axis_set) &
+        table_df["s4"].isin(axis_set)
+    ].copy()
+    
+    # Re-rank after filtering
+    table_df_filtered = table_df_filtered.sort_values("raw_rating", ascending=False).reset_index(drop=True)
+    table_df_filtered["rank"] = range(1, len(table_df_filtered) + 1)
+    
+    # Rebuild UI version
+    table_df_ui = table_df_filtered[["rank", "s3_full", "s4_full", "raw_rating", "net_rating"]].copy()
+    
+    table_df_ui["raw_rating"] = table_df_ui["raw_rating"].map(
+        lambda v: f"{float(v):.2f}" if pd.notna(v) else "—"
+    )
+    
+    table_df_ui["_s3_code"] = table_df_filtered["s3"].values
+    table_df_ui["_s4_code"] = table_df_filtered["s4"].values    
+    
     if len(axis_skills) < 2:
         msg = f"Filter '{filter_mode}' left fewer than 2 skills on the heat map. Try switching back to 'All'."
         return step3_title, heatmap_title, msg, table_df_ui.to_dict("records"), go.Figure()
@@ -4380,6 +5042,73 @@ def update_detail_skill_icons(s1, s2, s3, s4):
         return f"/assets/skill_icons/{code}.png"
 
     return path(s1), path(s2), path(s3), path(s4)
+
+@app.callback(
+    Output("reroll-slot-dropdown", "options"),
+    Output("reroll-slot-dropdown", "value"),
+    Input("detail-skill1", "value"),
+    Input("detail-skill2", "value"),
+    Input("detail-skill3", "value"),
+    Input("detail-skill4", "value"),
+)
+def update_reroll_slot_dropdown(s1, s2, s3, s4):
+    opts = get_reroll_slot_options(s1, s2, s3, s4)
+    default_val = opts[0]["value"] if opts else None
+    return opts, default_val
+    
+@app.callback(
+    Output("reroll-target-skills", "options"),
+    Output("reroll-target-skills", "value"),
+    Input("detail-hero-class", "value"),
+    Input("detail-skill1", "value"),
+    Input("detail-skill2", "value"),
+    Input("detail-skill3", "value"),
+    Input("detail-skill4", "value"),
+    Input("reroll-slot-dropdown", "value"),
+    Input("reroll-target-skills", "value"),
+)
+def update_reroll_target_options(class_code, s1, s2, s3, s4, reroll_slot, current_targets):
+    if not class_code or not s1 or not s2 or not s3 or not s4 or not reroll_slot:
+        return [], []
+
+    selected_skills = [s1, s2, s3, s4]
+    valid_targets = get_valid_reroll_targets(class_code, selected_skills, int(reroll_slot))
+
+    opts = [{"label": skill_label(sc), "value": sc} for sc in valid_targets]
+
+    current_targets = current_targets or []
+    kept = [sc for sc in current_targets if sc in valid_targets][:3]
+
+    return opts, kept
+
+@app.callback(
+    Output("tab2-frame4-current-summary", "children"),
+    Input("detail-hero-class", "value"),
+    Input("detail-skill1", "value"),
+    Input("detail-skill2", "value"),
+    Input("detail-skill3", "value"),
+    Input("detail-skill4", "value"),
+)
+def update_tab2_frame4_current_summary(class_code, s1, s2, s3, s4):
+    return build_tab2_frame4_current_summary(class_code, s1, s2, s3, s4)
+
+@app.callback(
+    Output("tab2-frame4-results", "children"),
+    Input("detail-hero-class", "value"),
+    Input("detail-skill1", "value"),
+    Input("detail-skill2", "value"),
+    Input("detail-skill3", "value"),
+    Input("detail-skill4", "value"),
+    Input("reroll-slot-dropdown", "value"),
+    Input("reroll-target-skills", "value"),
+)
+def update_tab2_frame4_results(class_code, s1, s2, s3, s4, reroll_slot, target_skills):
+    return build_tab2_frame4_results_table(
+        class_code=class_code,
+        s1=s1, s2=s2, s3=s3, s4=s4,
+        reroll_slot=reroll_slot,
+        target_skills=target_skills,
+    )
 
 
 @app.callback(
