@@ -3379,7 +3379,7 @@ def protect_app():
         return redirect("/login")
         
 # --- SERVER INFORMATION - Activate below for _deploy versions
-# server = app.server
+server = app.server
 
 # --- Begin body of Dash app
 
