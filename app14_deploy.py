@@ -3269,12 +3269,14 @@ def login():
     if request.method == "HEAD":
         return ("", 200)
 
+    # Clear any stale OAuth/session state before starting a fresh login
+    session.clear()
+
     redirect_uri = url_for("callback", _external=True)
     print(
         f"[LOGIN START] path=/login method={request.method} remote_addr={request.remote_addr}",
         flush=True
     )
-    
     return discord.authorize_redirect(redirect_uri)
     
 @server.route("/callback")
@@ -3318,7 +3320,7 @@ def login_failed():
     return """
     <h3>Login failed</h3>
     <p>Your Discord login session got out of sync.</p>
-    <p>Please close this tab, then try again from the login link.</p>
+    <p>Please close this tab and start again from the login link below.</p>
     <p><a href="/login">Start Discord login again</a></p>
     """
     
@@ -3377,7 +3379,7 @@ def protect_app():
         return redirect("/login")
         
 # --- SERVER INFORMATION - Activate below for _deploy versions
-server = app.server
+# server = app.server
 
 # --- Begin body of Dash app
 
