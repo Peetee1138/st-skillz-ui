@@ -1439,8 +1439,13 @@ def build_single_skill_table(row):
             style=CLICKABLE_ICON_BUTTON_STYLE,   # ✅ add this
         )
 
-        skill_label_str = skill_label(sc)  # "ABC - Name"
-
+        skill_label_cell = html.Span(
+            [
+                html.Span(skill_label(sc), className="skill-label-full"),
+                html.Span(sc, className="skill-label-code"),
+            ]
+        )
+        
         # Default values
         # r_max = None
         tier = None
@@ -1485,7 +1490,7 @@ def build_single_skill_table(row):
                 [
                     html.Td(icon_cell, style=icon_cell_style),
                     html.Td(
-                        skill_label_str,
+                        skill_label_cell,
                         style={**body_cell_style, "fontSize": "16px"},  # roughly 2× base
                     ),
                     html.Td(
@@ -2243,7 +2248,8 @@ def build_tab2_f3_rating_percentile_histogram(
         shapes=shapes,
         annotations=annotations,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        title=f"Raw Rating Percentile Distribution{f': {skill_code}' if skill_code else ''}",
+        title=f"Percentile Distribution by Rating"
+        + (f"<br>{' | '.join([strip_parens(get_full_skill_name(s)) for s in [s1, s2, s3, s4] if s])}" if skill_code else "")
     )
 
     # X-axis now starts at T2_F3_MIN_TO_SHOW
@@ -2257,8 +2263,9 @@ def build_tab2_f3_rating_percentile_histogram(
         linecolor="black",
     )
     fig.update_yaxes(
-        title_text="Count of Builds",
+        title_text="",
         rangemode="tozero",
+        showticklabels=False,
     )
 
     return fig
@@ -3110,7 +3117,7 @@ def tab5_body_markdown():
 # --- Login / Authorized Users
 
 # OLD
-app = Dash(__name__, suppress_callback_exceptions=True)
+# app = Dash(__name__, suppress_callback_exceptions=True)
 
 # With Discord Integration
 server = Flask(__name__)
@@ -3368,7 +3375,7 @@ def protect_app():
         return redirect("/login")
         
 # --- SERVER INFORMATION - Activate below for _deploy versions
-# server = app.server
+server = app.server
 
 # --- Begin body of Dash app
 
@@ -4612,6 +4619,7 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     return step3_title, heatmap_title, summary, table_df_ui.to_dict("records"), fig
 
 @app.callback(
+    Output("pending-tab-nav", "data", allow_duplicate=True),
     Output("detail-hero-class", "value"),
     Output("detail-skill1", "value"),
     Output("detail-skill2", "value"),
@@ -4652,9 +4660,9 @@ def drive_detail_selection(
             s3 = row.get("_s3_code")
             s4 = row.get("_s4_code")
             if not s3 or not s4:
-                return no_update, no_update, no_update, no_update, no_update
+                return no_update, no_update, no_update, no_update, no_update, no_update
 
-            return class_code, s1, s2, s3, s4
+            return {"tab": "tab-combo-detail"}, class_code, s1, s2, s3, s4
 
         # 2) Heatmap click (selected-combo updated)
         if trigger_id == "selected-combo" and sel_combo:
@@ -4670,13 +4678,13 @@ def drive_detail_selection(
             if not (class_code2 and s1_2 and s2_2 and s3_2 and s4_2):
                 return no_update, no_update, no_update, no_update, no_update
 
-            return class_code2, s1_2, s2_2, s3_2, s4_2
+            return {"tab": "tab-combo-detail"}, class_code2, s1_2, s2_2, s3_2, s4_2
 
-        return no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update
 
     except Exception as e:
         print("[drive_detail_selection] ERROR:", type(e).__name__, e)
-        return no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update
 
 
 
@@ -4882,10 +4890,8 @@ def route_tabs_and_single_skill(
     # 3) Heatmap click → Tab 2 (via selected-combo store)
     # ------------------------------------------------------------
     if trigger_id_str == "selected-combo":
-        if sel_combo:
-            return {"tab": "tab-combo-detail"}, no_update, no_update
         return no_update, no_update, no_update
-
+    
     # ------------------------------------------------------------
     # 0a) User manually switched to the Single Skill tab
     # ------------------------------------------------------------
@@ -5214,9 +5220,16 @@ def update_single_skill_summary(class_code, skill_code):
 )
 def update_tab3_frame3_title(class_code, skill_code):
     if not class_code or not skill_code:
-        return "Skill Rating Distribution"
-    full = strip_parens(get_full_skill_name(skill_code))
-    return f"Skill Ranking Distribution — {class_code} / {full}"
+        return "Skill Ranking Distribution"
+
+    class_name = class_meta.get(class_code, {}).get("name", class_code)
+    skill_name = strip_parens(get_full_skill_name(skill_code))
+
+    return [
+        "Skill Ranking Distribution:",
+        html.Br(),
+        f"{class_name} | {skill_name}",
+    ]
     
 @app.callback(
     Output("tab3-frame3-graph", "figure"),

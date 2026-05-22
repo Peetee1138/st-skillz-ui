@@ -640,3 +640,19 @@ html, body {
     height: 560px !important;
   }
 }
+
+.skill-label-code {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .skill-label-full {
+    display: none;
+  }
+
+  .skill-label-code {
+    display: inline;
+    font-weight: 700;
+    font-size: 18px;
+  }
+}
