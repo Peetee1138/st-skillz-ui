@@ -1,0 +1,113 @@
+/* Line with Class name + icon + skills */
+.class-skills-line {
+    margin-top: 6px;
+    margin-bottom: 4px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Class name part */
+.class-name {
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+/* Class icon image */
+.class-icon {
+    height: 20px;
+    margin-right: 4px;
+}
+
+/* Skill icon image */
+.skill-icon {
+    height: 18px;
+    vertical-align: middle;
+}
+
+/* Skill name main text */
+.skill-name-main {
+    font-weight: 500;
+}
+
+/* Smaller text in parentheses */
+.skill-name-info {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+/* Separator between skills: " | " */
+.skill-separator {
+    margin: 0 4px;
+}
+
+/* Extra tiny spacing between skill label and its icon */
+.skill-label-icon-space {
+    display: inline-block;
+    width: 2px;
+}
+
+/* Whole “headline” row (Rating + %ile + icons) */
+.build-headline-row {
+    margin-top: 4px;
+    font-size: 16px;
+    font-weight: 700;  /* headline bold */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Big numbers (rating, percentile) */
+.headline-rating-number {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+/* Tiny "Rating" / "% ile" sub-labels */
+.headline-sub-label {
+    font-size: 11px;
+    opacity: 0.8;
+    vertical-align: baseline;
+}
+
+/* Spacer between pieces like " | " */
+.headline-space {
+    display: inline-block;
+    width: 2px;
+}
+
+/* The actual " | " separators */
+.headline-separator {
+    margin: 0 6px;
+    opacity: 0.7;
+}
+
+/* Shop face / gem quality icons */
+.quality-icon {
+    height: 22px;
+    margin-left: 2px;
+}
+
+/* Special icons like APEX perk */
+.special-icon {
+    height: 20px;
+    margin-left: 2px;
+}
+
+/* Broken quest icon for N/Q */
+.headline-nq-icon {
+    height: 18px;
+}
+
+/* Container for all icons in the headline */
+.headline-icons-block {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Outer container for the whole build section in Frame 2 / Tab 2 */
+.tab2-frame2-build-section {
+    font-size: 14px;
+    line-height: 1.3;
+}

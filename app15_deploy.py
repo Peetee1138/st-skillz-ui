@@ -1,4 +1,4 @@
-# app13.py - v0.14
+# app15.py - v0.15
 #   0.2  - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
 #        - initial deployment to GitHub / OnRender
 #        - transition to .npz for 
@@ -14,6 +14,7 @@
 #   0.12 - (from 11a_deploy) tweaks based on Alpha Feeedback
 #   0.13 - Add enhancements to Tab 1 (selection of skills), add whatif (Frame 4) to tab2 (Skill Combo Detail)
 #   0.14 - [abandoned: Reddit login] Add 3-free logins to give time to add users to white list
+#   0.15 - Updated code to use consistent terminology, modified to be mobile friendly
 
 import os
 from pathlib import Path
@@ -100,13 +101,14 @@ CHART_BG = "#fcfbf9"   # for plotly paper/plot backgrounds
 # -- other styles --
 
 LEFT_FRAME_STYLE = {
-    "width": "350px",
-    "flex": "0 0 350px",
+    "width": "100%",
+    "maxWidth": "350px",
+    "flex": "0 1 350px",
 }
 
 LEFT_FRAME_DROPDOWN_STYLE = {
-    "width": "250px",
-    "flex": "0 0 250px",
+    "width": "100%",
+    "minWidth": "0",
 }
 
 TITLE_BANNER_STYLE = {
@@ -115,7 +117,7 @@ TITLE_BANNER_STYLE = {
     "backgroundColor": "#444444",
     "color": "white",
     "padding": "6px",
-    "borderRadius": "4px",  # can be 2px on charts if you prefer
+    "borderRadius": "4px",
     "marginBottom": "4px",
 }
 
@@ -124,6 +126,7 @@ ROW_CLASS_STYLE = {
     "alignItems": "center",
     "gap": "6px",
     "marginTop": "2px",
+    "width": "100%",
 }
 
 ROW_SKILL_STYLE = {
@@ -131,6 +134,7 @@ ROW_SKILL_STYLE = {
     "alignItems": "center",
     "gap": "6px",
     "marginTop": "2px",
+    "width": "100%",
 }
 
 CLAMP_2_LINES = {
@@ -1038,41 +1042,36 @@ def build_tab2_frame2_section1(row, class_meta, skill_lookup):
             # two tables → one flex row, top-aligned
             html.Div(
                 [
-                    # LEFT: Build Attributes + Rating Components stacked
-                    html.Div(
-                        [
-                            build_rating_components_table(row),
-                        ],
-                        style={
-                            "display": "flex",
-                            "flexDirection": "column",
-                            "gap": "8px",
-            
-                            # ✅ NEW: make left share space equally
-                            "flex": "1 1 0",
-                            "minWidth": "420px",
-                            "maxWidth": "100%",
-                        },
-                    ),
-            
-                    # RIGHT: Per-skill table
+                    # LEFT: Per-skill table / green Skill Summary table
                     html.Div(
                         build_single_skill_table(row),
                         style={
-                            # ✅ NEW: make right share space equally
-                            "flex": "1 1 0",
+                            "flex": "0 0 50%",
                             "minWidth": "420px",
-                            "maxWidth": "100%",
+                            "maxWidth": "50%",
                         },
                     ),
+            
+                    # RIGHT: Rating Components table — hidden for now, not deleted
+                    # html.Div(
+                    #     [
+                    #         build_rating_components_table(row),
+                    #     ],
+                    #     style={
+                    #         "display": "flex",
+                    #         "flexDirection": "column",
+                    #         "gap": "8px",
+                    #         "flex": "0 0 50%",
+                    #         "minWidth": "420px",
+                    #         "maxWidth": "50%",
+                    #     },
+                    # ),
                 ],
                 className="build-subtables-row",
                 style={
                     "display": "flex",
                     "alignItems": "flex-start",
                     "gap": "16px",
-            
-                    # ✅ NEW: if viewport is tight, let them wrap instead of crushing one side
                     "flexWrap": "wrap",
                 },
             ),
@@ -1539,14 +1538,14 @@ def single_skill_tier_icon(tier):
       1 -> icon_shop_face_SSS
       2 -> icon_shop_face_S
       3 -> icon_shop_face_A
-      4 -> icon_shop_face_C
+      4 -> icon_shop_face_B
       6 -> icon_shop_face_D
     """
     mapping = {
         1: "icon_shop_face_SSS.png",
         2: "icon_shop_face_S.png",
         3: "icon_shop_face_A.png",
-        4: "icon_shop_face_C.png",
+        4: "icon_shop_face_B.png",
         6: "icon_shop_face_D.png",
     }
     try:
@@ -3816,8 +3815,8 @@ def make_layout_tab2():
             dcc.Graph(
                 id="combo-detail-histogram",
                 figure=go.Figure(),
-                config={"displayModeBar": False},
-                style={"height": "500px", "width": "75%"},
+                config={"displayModeBar": False, "responsive": True},
+                style={"height": "500px", "width": "100%"},
             ),
             # -------------------------------------------------------
             # ROW 3: FRAME 4 (Bottom full-width chart)

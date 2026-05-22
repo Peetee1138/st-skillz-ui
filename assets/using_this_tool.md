@@ -1,24 +1,21 @@
 # Using This Tool
 
-This app helps you select skills for your Shop Titans heroes. You can **pick and compare 4-skill builds** for a each **hero class**, using a consistent test setup and rating model. It relies on actual simulations and game data.  
+This app helps you asseess skills for your Shop Titans heroes. You can **pick and compare 4-skill builds** for a each **hero class**, using a consistent Rating model that is calculated based on actual simulations and game data.  
 
 Fundamentally it helps answer:  ***Is my skill build "good enough", or should I retire or re-roll.***
 
 The difference is that this approach rates skills **in the full context of the game** using actual data.
 
-Version Note:  This is an "Alpha version" and it does not yet have all intended features, including:
-1) Tricksters are excluded, as they are well covered for there use with Polonia.
-2) Further tuning of the ratings is ongoing. While this will unliekly affect the rating **percentile** of a given build, it may affect the overall rating.
-3) Exploring options for summary data across all classes and rosters
+What this tool ***is not***:  The ratings/percentiles while *speicific*, are *exact* for a one circumstance out of infinite choices.  Meaning, that what may be the highest rated build here might not be for another set of equipment / spirits.  That said the intent is that this tool is "good enough" to enable decisionmaking, and if you want to be precise, use other simulators to validate what works best for you!
 
 ---
 
 ## Quick Start (30 seconds)
 
-1) **Pick a Hero Class** 
-2) Use **2-Skill Explorer** to find strong “cores”. Shows the ratings of each combination of 3rd/4th skills, and a heat map to visualize.
-3) Use **Skill Combo Detail** by seelcting a build, or by setting one manually to see information on each unique 4-skill build.
-4) Use **Single Skill Info** to understand whether one particular skill is generally strong (or only strong in certain contexts).
+1. **Pick a Hero Class** 
+2. Use **2-Skill Explorer** to find strong “cores”. Shows the ratings of each combination of 3rd/4th skills, and a heat map to visualize.
+3. Use **Skill Combo Detail** by seelcting a build, or by setting one manually to see information on each unique 4-skill build.
+4. Use **Single Skill Info** to understand whether one particular skill is generally strong (or only strong in certain contexts).
 
 ## What “Builds” are in this app
 
@@ -28,6 +25,25 @@ A **build** here means a **unique 4-skill combination** for a single hero class.
 - Ratings and charts are **class-specific** (a great skill combo on a Grandmaster can be mediocre on an Arch Druid, etc.).
 - This tool uses the Tier 1 names of Skills, in English.
 - We only refer to the "souled-up" version of each hero class.
+
+---
+
+# Alpha Testing Notes:
+
+This tool is hosted on a free service, and is in an Alpha test mode. 
+
+## Version Notes:  Known issues / items to address:
+1. Tricksters are excluded, as they are well covered for there use with Polonia.
+2. Further tuning of the ratings is ongoing. While this will unliekly affect the rating **percentile** of a given build, it may affect the overall rating.
+3. There is a long initial load time, and navigation between screens may not work right the first time. Please try again, and it should work right.
+
+## Requests to Alpha users:
+
+PENDING
+
+---
+
+# Details about the Tool
 
 ## Notes on Icons / Labels
 
@@ -59,14 +75,20 @@ This is the “truth tab.” Use it to explore a specific 4-skill build.
 
 ### What you get here
 - A build summary card (your selected class + 4 skills)
-- **Rating Summary**: (1) Rating for the Build | (2) Percentile rank of the Build among all builds in this Class | (3) Trend information
-- (1) Ratings are on a 100.0 point scale.  Each class has a max rating (betweeen 99.2 and 100.0).
-- (2) Rank **is the most improtant and accurate aspect of the rating", icons show the strength in a visual way.  <xxxx>
-- (3) How does the Build stack up as Quests get harder (AJ Extreme Mini-Bosses).  Upward Graph: growing trend.  Flexed Arm: strong now.  Broken Glass: Sub-optimal
-- Build Rating Table: - <XXXX>
-- Component Skill Table: Shows each skill and then a sparkline indicating the relative quality of that Skill for this Class
-- A histogram showing for this Class: for each Rating cluster (x-axis) the count (y-axis) of Builds.
-- The vertical line shows **this build’s rating** and its **percentile** in-clas.
+- **Rating Summary**:
+    - Rating for the Build | Percentile rank of the Build among all builds in this Class | Quality Icon | Trend information
+    - (1) Ratings are on a 100.0 point scale.  Each class has a max rating (betweeen 99.2 and 100.0).
+    - (2) Rank **is the most improtant and accurate aspect of the rating", quality icons show the strength in a visual way.
+    - (3) Trend: How does the Build stack up as Quests get harder (AJ Extreme Mini-Bosses).  Upward Graph: growing trend.  Flexed Arm: strong now.  Broken Glass: Sub-optimal
+- **Build Rating Table**:
+    - Provides insight into the components that contribute to the Rating:  Reliablity, Survival and Skill Efficiency
+    - Alpha Note:  This may end up being removed, as it may cause confusion to the average user. feedback appreciated.
+- **Component Skill Table:**
+    - Skill level summary: Icon, Name and overall quality icon for the skill
+    - Sparkline histogram showing how strong the skill is in terms of the quantity of highly rated builds that include this class. The more Green & Yellow, the better!
+- **Histogram** mapping *this Build* vs. *all Builds for this Class*
+    - For this Class: for each Rating tier (x-axis) the count (y-axis) of Builds.
+    - The vertical line shows **this build’s rating** and its **percentile** in-clas.
 
 ---
 
@@ -90,6 +112,21 @@ Use this tab when you want to answer:
 - Understanding whether a Tier 1 skill is truly right for **this Build**
 
 ---
+
+## Tab 4 - Class Summary
+
+Use this tab to understand:
+- The max aassigned rating per class (which is set by performance vs. AJ Extreme mini-bosses)
+- The most **Key Skill** for that class based on overall data
+- A couple of strong **Example Cores** to help you get started with the 2-Skill Explorer
+- Example 4-skill Builds to help you get started with the Skill Combo Detail
+- ***Apex Build*** reflects **a top rated build in this model**.  The Tool is not trying to say this is **the best build** for the class.
+- ***Example Build 1*** An example of a good/very-good build that relies more on Uncommon skills
+- ***Example Build 2*** An example of a good build that relies primarly on Common skills
+
+---
+
+# Under the Hood
 
 ## Methodology (in plain English)
 
@@ -136,30 +173,30 @@ Each build gets a mathematically calculated Rating based on three components:
 
 ---
 
-## Common Pitfalls (and how to avoid them)
+# Common Pitfalls (and how to avoid them)
 
-### 1) Chasing a single #1 build
+## 1) Chasing a single #1 build
 - Since the tool is based on simulaton data, there is randomness and variability.  Plus is a degree of judgment (and maybe slight bias) in setting the ratings.
 - **Percentile** quality of a Build within a class is the best way to assess a build.
 - Verify by using Ress' tool versus you intended quest targets.
 
 **Suggested approach:** pick from the top percentile band and choose the build that matches your risk tolerance.
 
-### 2) Overvaluing “spiky” builds
+## 2) Overvaluing “spiky” builds
 Some builds can score well but are fragile or inconsistent.
 
 **Signal:** high rating but R3 looks suspiciously weak.
 
-### 3) Treating one class’s meta as universal
+## 3) Treating one class’s meta as universal
 A “must-have” skill in one class might be mid-tier in another.
 
 **Rule:** always evaluate inside the class you’re playing.
 
 ---
 
-## FAQ
+# FAQ
 
-### “Why does the same build feel different in my roster?”
+## “Why does the same build feel different in my roster?”
 This tool uses a controlled setup. Your real roster can differ by:
 - gear/enchant alignment
 - hero seeds / level scaling details
@@ -168,7 +205,7 @@ This tool uses a controlled setup. Your real roster can differ by:
 
 Use this app to identify **strong candidates**, then validate with your actual roster constraints.
 
-### “What should I do if two builds are basically tied?”
+## “What should I do if two builds are basically tied?”
 Pick the one with:
 - better R1/R2 balance, and/or
 - skills that synergize with how you actually play (risk vs speed preference)
