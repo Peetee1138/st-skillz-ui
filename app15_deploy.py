@@ -3812,11 +3812,16 @@ def make_layout_tab2():
                 ],
                 style={"fontSize": "11px", "marginTop": "4px"},
             ),
-            dcc.Graph(
-                id="combo-detail-histogram",
-                figure=go.Figure(),
-                config={"displayModeBar": False, "responsive": True},
-                style={"height": "500px", "width": "100%"},
+            html.Div(
+                [
+                    dcc.Graph(
+                        id="combo-detail-histogram",
+                        figure=go.Figure(),
+                        config={"displayModeBar": False, "responsive": True},
+                        style={"height": "500px", "width": "100%"},
+                    ),
+                ],
+                className="t2-f3-chart-wrap",
             ),
             # -------------------------------------------------------
             # ROW 3: FRAME 4 (Bottom full-width chart)
