@@ -3110,7 +3110,7 @@ def tab5_body_markdown():
 # --- Login / Authorized Users
 
 # OLD
-# app = Dash(__name__, suppress_callback_exceptions=True)
+app = Dash(__name__, suppress_callback_exceptions=True)
 
 # With Discord Integration
 server = Flask(__name__)
@@ -3368,7 +3368,7 @@ def protect_app():
         return redirect("/login")
         
 # --- SERVER INFORMATION - Activate below for _deploy versions
-server = app.server
+# server = app.server
 
 # --- Begin body of Dash app
 

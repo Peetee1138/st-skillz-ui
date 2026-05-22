@@ -126,6 +126,14 @@ Use this tab to understand:
 
 ---
 
+# Disclaimers
+
+This site is a fan-made tool related to the game Shop Titans:
+- Not affiliated with Kabam.
+- Uses in-game and published data, and provides an external analysis to help players make their own decisions about Hero Skills.
+- Uses authorized fan toolkit images
+- This site cannot be used to facilitate account sharing, automation or economy manipulation.
+
 # Under the Hood
 
 ## Methodology (in plain English)
