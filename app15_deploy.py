@@ -2628,20 +2628,10 @@ def build_single_skill_summary_block(class_code: str, skill_code: str):
             html.Hr(style={"margin": "8px 0"}),
             html.Div(
                 [
-                    html.Div(bar_block, style={"flex": "3 1 0"}),
-                    html.Div(
-                        stats_table,
-                        style={
-                            "flex": "2 1 0",
-                            "paddingLeft": "16px",
-                        },
-                    ),
+                    html.Div(bar_block, className="t3-f2-bar-wrap"),
+                    html.Div(stats_table, className="t3-f2-stats-wrap"),
                 ],
-                style={
-                    "display": "flex",
-                    "alignItems": "flex-start",
-                    "gap": "12px",
-                },
+                className="t3-f2-summary-row",
             ),
         ],
         className="single-skill-summary-block",
@@ -3401,14 +3391,9 @@ def make_layout_tab1():
             # ROW 1: Frame 1 (left) + Frame 2 (right)
             # -------------------------------------------------------
             html.Div(
-                style={
-                    "display": "flex",
-                    "flexWrap": "nowrap",
-                    "gap": "20px",
-                    "alignItems": "flex-start",
-                },
+                className="t1-main-row",
                 children=[
-
+        
                     # ---------- FRAME 1 (Left Column) ----------
                     html.Div(
                         style=LEFT_FRAME_STYLE,
@@ -3534,7 +3519,7 @@ def make_layout_tab1():
 
                     # ---------- FRAME 2 (Right Column) ----------
                     html.Div(
-                        style={"flex": "1", "minWidth": "450px"},
+                        className="t1-f2-table-panel",
                         children=[
                             html.H4(id="step3-title", style=TITLE_BANNER_STYLE),
 
@@ -4180,7 +4165,9 @@ def make_layout_tab5():
 
 app.layout = html.Div(
     style={"backgroundColor": APP_BG, "minHeight": "100vh"},
-    children=[        dcc.Store(id="selected-combo"),
+    children=[
+        dcc.Store(id="selected-combo"),
+        dcc.Store(id="pending-tab-nav"),
         dcc.Tabs(
             id="main-tabs",
             value="tab-2skill",
@@ -4734,7 +4721,7 @@ def on_heatmap_click(clickData, class_code, s1, s2):
     return combo
 
 @app.callback(
-    Output("main-tabs", "value"),
+    Output("pending-tab-nav", "data"),
     Output("single-skill-class", "value"),
     Output("single-skill-select", "value"),
 
@@ -4836,7 +4823,7 @@ def route_tabs_and_single_skill(
         if not sk:
             return current_tab, no_update, no_update
 
-        return "tab-single-skill", detail_class, sk
+        return {"tab": "tab-single-skill"}, detail_class, sk
 
     # ------------------------------------------------------------
     # 1) Tab 1 icons → Single Skill Info
@@ -4846,14 +4833,14 @@ def route_tabs_and_single_skill(
             return current_tab, no_update, no_update
         if not hero_class or not skill1_code:
             return current_tab, no_update, no_update
-        return "tab-single-skill", hero_class, skill1_code
+        return {"tab": "tab-single-skill"}, hero_class, skill1_code
 
     if trigger_id_str == "skill2-icon-btn":
         if not _is_real_scalar_click(trigger_val):
             return current_tab, no_update, no_update
         if not hero_class or not skill2_code:
             return current_tab, no_update, no_update
-        return "tab-single-skill", hero_class, skill2_code
+        return {"tab": "tab-single-skill"}, hero_class, skill2_code
 
     # ------------------------------------------------------------
     # 2) Clicks in S3/S4 table
@@ -4861,22 +4848,22 @@ def route_tabs_and_single_skill(
     if trigger_id_str == "combo-table":
         # During paging/sorting, Dash can fire active_cell updates with None column_id
         if not active_cell:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         col_id = active_cell.get("column_id")
         row_idx = active_cell.get("row")
 
         if not col_id or row_idx is None:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         if not viewport_rows or row_idx < 0 or row_idx >= len(viewport_rows):
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         row = viewport_rows[row_idx]
 
         # 2a) Rank click → go to Combo Detail tab
         if col_id == "rank":
-            return "tab-combo-detail", no_update, no_update
+            return {"tab": "tab-combo-detail"}, no_update, no_update
 
         # 2b) Skill 3 / Skill 4 click → go to Single Skill Info
         if col_id == "s3_full":
@@ -4884,20 +4871,20 @@ def route_tabs_and_single_skill(
         elif col_id == "s4_full":
             sk = row.get("_s4_code")
         else:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         if not hero_class or not sk:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
-        return "tab-single-skill", hero_class, sk
+        return {"tab": "tab-single-skill"}, hero_class, sk
 
     # ------------------------------------------------------------
     # 3) Heatmap click → Tab 2 (via selected-combo store)
     # ------------------------------------------------------------
     if trigger_id_str == "selected-combo":
         if sel_combo:
-            return "tab-combo-detail", no_update, no_update
-        return current_tab, no_update, no_update
+            return {"tab": "tab-combo-detail"}, no_update, no_update
+        return no_update, no_update, no_update
 
     # ------------------------------------------------------------
     # 0a) User manually switched to the Single Skill tab
@@ -4906,7 +4893,7 @@ def route_tabs_and_single_skill(
         target_class = detail_class or hero_class or "G2"
         base = get_base_skills_for_class(target_class)
         default_skill = sorted(base)[0] if base else None
-        return "tab-single-skill", target_class, default_skill
+        return {"tab": "tab-single-skill"}, target_class, default_skill
 
     # ------------------------------------------------------------
     # 4) Tab 2/3 headline + table icons (pattern IDs)
@@ -4919,20 +4906,40 @@ def route_tabs_and_single_skill(
 
     if isinstance(comp_id, dict) and comp_id.get("type") == "detail-skill-icon-btn":
         if not _is_real_pattern_click(trigger_val):
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         sk = comp_id.get("skill")
         if not detail_class or not sk:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
-        return "tab-single-skill", detail_class, sk
+        return {"tab": "tab-single-skill"}, detail_class, sk
 
     # ------------------------------------------------------------
     # 5) Fallback (NEVER return None)
     # ------------------------------------------------------------
-    return current_tab, no_update, no_update
+    return no_update, no_update, no_update
 
+@app.callback(
+    Output("main-tabs", "value"),
+    Input("pending-tab-nav", "data"),
+    State("main-tabs", "value"),
+    prevent_initial_call=True,
+)
+def apply_pending_tab_nav(nav_data, current_tab):
 
+    if not nav_data:
+        return no_update
+
+    if isinstance(nav_data, str):
+        return nav_data
+
+    target = nav_data.get("tab")
+
+    if not target:
+        return no_update
+
+    return target
+    
 @app.callback(
     Output("skill1-icon", "src"),
     Output("skill2-icon", "src"),
@@ -5221,7 +5228,7 @@ def update_tab3_histogram(class_code, selected_skill):
     return build_tab3_skill_ranking_distribution(skill_df, selected_skill)
 
 @app.callback(
-    Output("main-tabs", "value", allow_duplicate=True),
+    Output("pending-tab-nav", "data", allow_duplicate=True),
 
     Output("hero-class", "value", allow_duplicate=True),
     Output("skill1", "value", allow_duplicate=True),
@@ -5299,7 +5306,7 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
     if typ == "tab4-key-skill-btn":
         skill_code = comp_id.get("skill")
         return (
-            "tab-single-skill",
+            {"tab": "tab-single-skill"},
             no_update, no_update, no_update,
             no_update, no_update, no_update, no_update, no_update,
             class_code, skill_code,
@@ -5337,7 +5344,7 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
             )
 
         return (
-            "tab-combo-detail",
+            {"tab": "tab-combo-detail"},
             no_update, no_update, no_update,
             class_code, codes[0], codes[1], codes[2], codes[3],
             no_update, no_update,

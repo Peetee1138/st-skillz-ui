@@ -539,3 +539,104 @@ html, body {
     width: 100%;
   }
 }
+
+/* =======================================================
+   TAB 1 MOBILE LAYOUT
+   ======================================================= */
+
+.t1-main-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.t1-f2-table-panel {
+  flex: 1 1 450px;
+  min-width: 450px;
+}
+
+@media (max-width: 900px) {
+  .t1-main-row {
+    flex-direction: column;
+  }
+
+  .t1-main-row > div,
+  .t1-f2-table-panel {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    flex: none !important;
+  }
+
+  #combo-table {
+    width: 100%;
+  }
+}
+
+/* =======================================================
+   TAB 3 MOBILE SUMMARY FIX
+   ======================================================= */
+
+.t3-f2-summary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.t3-f2-bar-wrap {
+  flex: 3 1 0;
+  min-width: 0;
+}
+
+.t3-f2-stats-wrap {
+  flex: 2 1 0;
+  padding-left: 16px;
+  min-width: 260px;
+}
+
+@media (max-width: 900px) {
+  .t3-f2-summary-row {
+    flex-direction: column;
+  }
+
+  .t3-f2-bar-wrap,
+  .t3-f2-stats-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding-left: 0;
+    overflow-x: auto;
+  }
+
+  .single-skill-summary-table {
+    width: 100%;
+    min-width: 360px;
+  }
+}
+
+/* =======================================================
+   MOBILE CHART WIDTH FIXES
+   ======================================================= */
+
+@media (max-width: 900px) {
+  #combo-detail-histogram,
+  #tab3-frame3-graph,
+  #combo-heatmap {
+    width: 100% !important;
+  }
+
+  .js-plotly-plot,
+  .plotly,
+  .plot-container {
+    max-width: 100% !important;
+  }
+
+  #tab3-frame3-graph {
+    height: 560px !important;
+  }
+
+  #combo-detail-histogram {
+    height: 560px !important;
+  }
+}
