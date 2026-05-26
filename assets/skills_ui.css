@@ -656,3 +656,28 @@ html, body {
     font-size: 18px;
   }
 }
+
+@media (max-width: 900px) {
+  #combo-table .dash-cell.column-s3_full,
+  #combo-table .dash-header.column-s3_full,
+  #combo-table .dash-cell.column-s4_full,
+  #combo-table .dash-header.column-s4_full {
+    display: none !important;
+  }
+
+  #combo-table .dash-cell.column-s3,
+  #combo-table .dash-header.column-s3,
+  #combo-table .dash-cell.column-s4,
+  #combo-table .dash-header.column-s4 {
+    display: table-cell !important;
+  }
+}
+
+#tab2-frame4-results {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#tab2-frame4-results table {
+  width: max-content;
+}

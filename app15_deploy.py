@@ -1885,7 +1885,7 @@ def build_tab2_frame4_current_summary(class_code, s1, s2, s3, s4):
         style={
             "borderCollapse": "collapse",
             "width": "100%",
-            "minWidth": "640px",
+            "minWidth": "0px",
         }
     )
 
@@ -3597,11 +3597,13 @@ def make_layout_tab1():
                                         "cursor": "pointer",
                                     },
                                 ],
-                                hidden_columns=["_s3_code", "_s4_code"],
+                                hidden_columns=["_s3_code", "_s4_code", "s3", "s4"],
                                 columns=[
                                     {"name": "Rank", "id": "rank"},
                                     {"name": "Skill 3", "id": "s3_full"},
+                                    {"name": "S3", "id": "s3"},
                                     {"name": "Skill 4", "id": "s4_full"},
+                                    {"name": "S4", "id": "s4"},
                                     {"name": "Raw Rating", "id": "raw_rating"},
                                     {"name": "Net Rating", "id": "net_rating"},
                                     {"name": "_s3_code", "id": "_s3_code"},
@@ -3842,8 +3844,9 @@ def make_layout_tab2():
                     html.Div(
                         id="tab2-frame4-current-summary",
                         style={
-                            "width": "60%",
-                            "minWidth": "520px",
+                            "width": "fit-content",
+                            "maxWidth": "100%",
+                            "minWidth": "0",
                             "border": "1px solid #ccc",
                             "borderRadius": "4px",
                             "padding": "8px",
@@ -3902,8 +3905,9 @@ def make_layout_tab2():
                     html.Div(
                         id="tab2-frame4-results",
                         style={
-                            "width": "60%",
-                            "minWidth": "700px",
+                            "width": "100%",
+                            "maxWidth": "100%",
+                            "minWidth": "0",
                             "border": "1px solid #ccc",
                             "borderRadius": "4px",
                             "padding": "8px",
@@ -4417,7 +4421,7 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     table_df_filtered["rank"] = range(1, len(table_df_filtered) + 1)
     
     # Rebuild UI version
-    table_df_ui = table_df_filtered[["rank", "s3_full", "s4_full", "raw_rating", "net_rating"]].copy()
+    table_df_ui = table_df_filtered[["rank", "s3", "s4", "s3_full", "s4_full", "raw_rating", "net_rating"]].copy()
     
     table_df_ui["raw_rating"] = table_df_ui["raw_rating"].map(
         lambda v: f"{float(v):.2f}" if pd.notna(v) else "—"
