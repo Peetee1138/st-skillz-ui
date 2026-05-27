@@ -1,20 +1,22 @@
 # app15.py - v0.15
-#   0.2  - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
-#        - initial deployment to GitHub / OnRender
-#        - transition to .npz for 
-#   0.3  - Implement Tab 3 and enhancements
-#   0.4  - Back out efforts to highlight the heatmap on Tab 1 (failed), add flex sizing to 2-skill tab; update to use _unique data (deploy / deploy2)
-#   0.5  - TBD
-#   0.6  - Updating Tab2, Frame3 to show alternative histogram of rating percentiles
-#   0.7  - Uploading all classes, adjusting base text, fix behaviors
-#   0.8  - Rely only on xx_all_data_ui.npz (remove use of xx_final_data.npz
-#   0.9  - Clean up and move to .npy for data efficency, add Using this Tool
-#   0.10 - Add "tab 4" for Class Info
-#   0.11 - Add Discord login
-#   0.12 - (from 11a_deploy) tweaks based on Alpha Feeedback
-#   0.13 - Add enhancements to Tab 1 (selection of skills), add whatif (Frame 4) to tab2 (Skill Combo Detail)
-#   0.14 - [abandoned: Reddit login] Add 3-free logins to give time to add users to white list
-#   0.15 - Updated code to use consistent terminology, modified to be mobile friendly
+#   0.2   - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
+#         - initial deployment to GitHub / OnRender
+#         - transition to .npz for 
+#   0.3   - Implement Tab 3 and enhancements
+#   0.4   - Back out efforts to highlight the heatmap on Tab 1 (failed), add flex sizing to 2-skill tab; update to use _unique data (deploy / deploy2)
+#   0.5   - TBD
+#   0.6   - Updating Tab2, Frame3 to show alternative histogram of rating percentiles
+#   0.7   - Uploading all classes, adjusting base text, fix behaviors
+#   0.8   - Rely only on xx_all_data_ui.npz (remove use of xx_final_data.npz
+#   0.9   - Clean up and move to .npy for data efficency, add Using this Tool
+#   0.10  - Add "tab 4" for Class Info
+#   0.11  - Add Discord login
+#   0.12  - (from 11a_deploy) tweaks based on Alpha Feeedback
+#   0.13  - Add enhancements to Tab 1 (selection of skills), add whatif (Frame 4) to tab2 (Skill Combo Detail)
+#   0.14  - [abandoned: Reddit login] Add 3-free logins to give time to add users to white list
+#   0.15  - Updated code to use consistent terminology, modified to be mobile friendly
+#   0.15a - Tweaks to make charts more mobile friendly - sub-version to avoid damaging v0.15
+
 
 import os
 from pathlib import Path
@@ -3941,7 +3943,7 @@ def make_layout_tab2():
                     html.Div(
                         id="tab2-frame4-results",
                         style={
-                            "width": "100%",
+                            "width": "fit-content",
                             "maxWidth": "100%",
                             "minWidth": "0",
                             "border": "1px solid #ccc",

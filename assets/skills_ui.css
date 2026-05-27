@@ -325,6 +325,11 @@ button:focus-visible {
 /* TAB 3: single-skill class/skill line should NOT behave like the 2-row grid */
 /* TAB 3 ONLY: undo Tab2's `display: contents` so Tab3 is truly single-line */
 /* --- TAB 3: FORCE the Class/Skill header row to stay on ONE line --- */
+.headline-space {
+  display: inline-block;
+  width: 6px;
+}
+
 .ssi-headline-row{
   margin-top: 8px;
   display: flex;
@@ -531,7 +536,7 @@ html, body {
 }
 
 .t2-f3-chart-wrap {
-  width: 75%;
+  width: 60%;
 }
 
 @media (max-width: 900px) {
@@ -657,6 +662,15 @@ html, body {
   }
 }
 
+/* Desktop: show full names, hide mobile short names */
+#combo-table .dash-cell.column-s3_mobile,
+#combo-table .dash-header.column-s3_mobile,
+#combo-table .dash-cell.column-s4_mobile,
+#combo-table .dash-header.column-s4_mobile {
+  display: none !important;
+}
+
+/* Mobile: show short/base names, hide full names */
 @media (max-width: 900px) {
   #combo-table .dash-cell.column-s3_full,
   #combo-table .dash-header.column-s3_full,
@@ -665,10 +679,10 @@ html, body {
     display: none !important;
   }
 
-  #combo-table .dash-cell.column-s3,
-  #combo-table .dash-header.column-s3,
-  #combo-table .dash-cell.column-s4,
-  #combo-table .dash-header.column-s4 {
+  #combo-table .dash-cell.column-s3_mobile,
+  #combo-table .dash-header.column-s3_mobile,
+  #combo-table .dash-cell.column-s4_mobile,
+  #combo-table .dash-header.column-s4_mobile {
     display: table-cell !important;
   }
 }
@@ -680,4 +694,99 @@ html, body {
 
 #tab2-frame4-results table {
   width: max-content;
+}
+
+@media (max-width: 900px) {
+  #combo-table .dash-cell.column-s3_full,
+  #combo-table .dash-header.column-s3_full,
+  #combo-table .dash-cell.column-s4_full,
+  #combo-table .dash-header.column-s4_full {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .t1-heatmap-filter {
+    width: 100% !important;
+  }
+
+  #combo-heatmap {
+    height: 520px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .ssi-headline-row {
+    white-space: normal;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .ssi-headline-row .single-skill-class-skill-block {
+    white-space: normal;
+    flex-wrap: wrap;
+    gap: 8px;
+    line-height: 1.15;
+  }
+
+  .ssi-headline-row .skill-label-icon-space {
+    width: 8px;
+  }
+
+  .ssi-headline-row .skill-name-main,
+  .ssi-headline-row .skill-name-info {
+    white-space: normal;
+  }
+}
+
+.t3-f3-chart-wrap {
+  display: flex;
+  justify-content: flex-start;
+  width: 75%;
+}
+
+@media (max-width: 900px) {
+  .t3-f3-chart-wrap {
+    width: 100%;
+  }
+}
+
+#single-skill-tab .t3-f3-chart-wrap {
+  width: 75% !important;
+}
+
+@media (max-width: 900px) {
+  #single-skill-tab .t3-f3-chart-wrap {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .ssi-headline-row .single-skill-class-skill-block {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .ssi-headline-row .skill-name-main,
+  .ssi-headline-row .skill-name-info {
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 900px) {
+  #tab3-frame3-graph .ytitle,
+  #tab3-frame3-graph .ytick text {
+    display: none !important;
+  }
+
+  #tab3-frame3-graph .main-svg {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  #combo-heatmap {
+    pointer-events: none;
+  }
 }
