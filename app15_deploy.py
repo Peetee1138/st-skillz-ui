@@ -2701,7 +2701,7 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
             paper_bgcolor="white",
             plot_bgcolor="white",
             height=420,
-            margin=dict(l=40, r=20, t=70, b=40),
+            margin=dict(l=10, r=20, t=70, b=40),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         )
         fig.add_annotation(
@@ -3545,7 +3545,7 @@ def make_layout_tab1():
                                     {"label": "Top 20", "value": "top20"},  # NEW
                                     {"label": "Epic & Rare", "value": "epic_rare"},
                                 ],
-                                value="all",
+                                value="top10",
                                 clearable=False,
                                 style={"width": "180px"},
                                 className="t1-heatmap-filter",
@@ -4689,11 +4689,11 @@ def drive_detail_selection(
         # 1) Rank click in the table
         if trigger_id == "combo-table" and active_cell and active_cell.get("column_id") == "rank":
             if not viewport_rows or not class_code or not s1 or not s2:
-                return no_update, no_update, no_update, no_update, no_update
+                return no_update, no_update, no_update, no_update, no_update, no_update
 
             row_idx = active_cell.get("row")
             if row_idx is None or row_idx < 0 or row_idx >= len(viewport_rows):
-                return no_update, no_update, no_update, no_update, no_update
+                return no_update, no_update, no_update, no_update, no_update, no_update
 
             row = viewport_rows[row_idx]
             s3 = row.get("_s3_code")
@@ -4827,7 +4827,7 @@ def route_tabs_and_single_skill(
     """
     ctx = callback_context
     if not ctx.triggered:
-        return current_tab, no_update, no_update
+        return no_update, no_update, no_update
 
     trigger_info = ctx.triggered[0]
     trigger_prop = trigger_info["prop_id"]       # e.g. "skill1-icon-btn.n_clicks" or '{"type":...}.n_clicks'
@@ -4856,9 +4856,9 @@ def route_tabs_and_single_skill(
     # ------------------------------------------------------------
     if trigger_id_str in ("detail-skill1-btn", "detail-skill2-btn", "detail-skill3-btn", "detail-skill4-btn"):
         if not _is_real_scalar_click(trigger_val):
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
         if not detail_class:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         btn_to_skill = {
             "detail-skill1-btn": d_s1,
@@ -4868,7 +4868,7 @@ def route_tabs_and_single_skill(
         }
         sk = btn_to_skill.get(trigger_id_str)
         if not sk:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
 
         return {"tab": "tab-single-skill"}, detail_class, sk
 
@@ -4877,16 +4877,16 @@ def route_tabs_and_single_skill(
     # ------------------------------------------------------------
     if trigger_id_str == "skill1-icon-btn":
         if not _is_real_scalar_click(trigger_val):
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
         if not hero_class or not skill1_code:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
         return {"tab": "tab-single-skill"}, hero_class, skill1_code
 
     if trigger_id_str == "skill2-icon-btn":
         if not _is_real_scalar_click(trigger_val):
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
         if not hero_class or not skill2_code:
-            return current_tab, no_update, no_update
+            return no_update, no_update, no_update
         return {"tab": "tab-single-skill"}, hero_class, skill2_code
 
     # ------------------------------------------------------------
@@ -5381,7 +5381,7 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
             )
 
         return (
-            "tab-2skill",
+            {"tab": "tab-2skill"},
             class_code, codes[0], codes[1],
             no_update, no_update, no_update, no_update, no_update,
             no_update, no_update,
