@@ -1893,14 +1893,29 @@ def build_tab2_frame4_results_table(class_code, s1, s2, s3, s4, reroll_slot, tar
     """
     Table B: modeled outcomes.
     """
+
+    def status_box(message):
+        return html.Div(
+            message,
+            style={
+                "display": "inline-block",
+                "width": "fit-content",
+                "maxWidth": "100%",
+                "border": "1px solid #ccc",
+                "borderRadius": "4px",
+                "padding": "8px 12px",
+                "backgroundColor": PANEL_BG,
+            },
+        )
+
     if not class_code or not s1 or not s2 or not s3 or not s4:
-        return html.Div("Complete the build above to see modeled outcomes.")
+        return status_box("Complete the build above to see modeled outcomes.")
 
     if not reroll_slot:
-        return html.Div("Select a slot to reroll.")
+        return status_box("Select a slot to reroll.")
 
     if not target_skills:
-        return html.Div("Select up to 3 target skills to model.")
+        return status_box("Select up to 3 target skills to model.")
 
     selected_skills = [s1, s2, s3, s4]
     results = [
@@ -2263,7 +2278,7 @@ def build_tab2_f3_rating_percentile_histogram(
         linecolor="black",
     )
     fig.update_yaxes(
-        title_text="",
+        title_text="Count of Builds",
         rangemode="tozero",
         showticklabels=False,
     )
@@ -2830,13 +2845,22 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
         tickfont=dict(color="black"),
         title_font=dict(color="black"),
     )
+    
+    # Keep the y-axis readable: no more than ~4 major labels.
+    if y_max <= 0:
+        y_dtick = 500
+    else:
+        y_dtick = float(np.ceil((y_max / 4.0) / 500.0) * 500.0)
+        y_dtick = max(500.0, y_dtick)
+    
     fig.update_yaxes(
         range=[0, y_max],
         tickmode="linear",
         tick0=0,
-        dtick=500,
+        dtick=y_dtick,
         rangemode="tozero",
     )
+    
     fig.update_xaxes(title_text="Raw Rating")
     fig.update_yaxes(title_text="Count of Builds per Rating Group")
 
@@ -2853,10 +2877,14 @@ def tab4_split_codes(blob: str, n_skills: int) -> list[str]:
         return []
 
     s = str(blob).strip()
+    # Some build strings may include the class prefix, e.g. "G2AcrAll..."
+    if len(s) == 2 + (n_skills * 3):
+        s = s[2:]
+    
     expected_len = n_skills * 3
     if len(s) != expected_len:
         return []
-
+    
     return [s[i:i+3] for i in range(0, expected_len, 3)]
 
 # ===== TAB4:  Class Summaries and Example Builds ======
@@ -3399,6 +3427,12 @@ def make_layout_tab1():
             # -------------------------------------------------------
             html.Div(
                 className="t1-main-row",
+                style={
+                    "display": "flex",
+                    "flexWrap": "wrap",
+                    "gap": "20px",
+                    "alignItems": "flex-start",
+                },
                 children=[
         
                     # ---------- FRAME 1 (Left Column) ----------
@@ -3512,6 +3546,7 @@ def make_layout_tab1():
                                 value="all",
                                 clearable=False,
                                 style={"width": "180px"},
+                                className="t1-heatmap-filter",
                             ),
                             html.Br(),
                             html.Label("Exclude Skills (optional)"),
@@ -3527,6 +3562,7 @@ def make_layout_tab1():
                     # ---------- FRAME 2 (Right Column) ----------
                     html.Div(
                         className="t1-f2-table-panel",
+                        style={"flex": "1 1 450px", "minWidth": "450px"},
                         children=[
                             html.H4(id="step3-title", style=TITLE_BANNER_STYLE),
 
@@ -3601,13 +3637,13 @@ def make_layout_tab1():
                                 columns=[
                                     {"name": "Rank", "id": "rank"},
                                     {"name": "Skill 3", "id": "s3_full"},
-                                    {"name": "S3", "id": "s3"},
                                     {"name": "Skill 4", "id": "s4_full"},
-                                    {"name": "S4", "id": "s4"},
                                     {"name": "Raw Rating", "id": "raw_rating"},
                                     {"name": "Net Rating", "id": "net_rating"},
                                     {"name": "_s3_code", "id": "_s3_code"},
                                     {"name": "_s4_code", "id": "_s4_code"},
+                                    {"name": "s3", "id": "s3"},
+                                    {"name": "s4", "id": "s4"},
                                 ],
                             )
                         ],
@@ -4044,11 +4080,7 @@ def make_layout_tab3():
                         style={"height": "500px", "width": "100%"},
                     )
                 ],
-                style={
-                    "display": "flex",
-                    "justifyContent": "flex-start",
-                    "width": "75%",
-                },
+                className="t3-f3-chart-wrap",
             ),
         ],
     )
@@ -4354,14 +4386,6 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     table_df["s3_full"] = table_df["s3"].map(get_full_skill_name).fillna(table_df["s3"])
     table_df["s4_full"] = table_df["s4"].map(get_full_skill_name).fillna(table_df["s4"])
 
-    table_df_ui = table_df[["rank", "s3_full", "s4_full", "raw_rating", "net_rating"]].copy()
-    
-    # display formatting
-    table_df_ui["raw_rating"] = table_df_ui["raw_rating"].map(lambda v: f"{float(v):.2f}" if pd.notna(v) else "—")
-    
-    table_df_ui["_s3_code"] = table_df["s3"].values
-    table_df_ui["_s4_code"] = table_df["s4"].values
-
     lookup = {}
     for _, row in table_df.iterrows():
         key = frozenset({row["s3"], row["s4"]})
@@ -4404,32 +4428,41 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     if exclude_skills:
         exclude_set = set(exclude_skills)
         filtered_axis = [s for s in axis_skills if s not in exclude_set]
-    
+
         if len(filtered_axis) >= 2:
             axis_skills = filtered_axis
-    
+
     # --- APPLY SAME FILTER TO TABLE (Frame 2) ---
     axis_set = set(axis_skills)
-    
+
     table_df_filtered = table_df[
         table_df["s3"].isin(axis_set) &
         table_df["s4"].isin(axis_set)
     ].copy()
-    
+
     # Re-rank after filtering
     table_df_filtered = table_df_filtered.sort_values("raw_rating", ascending=False).reset_index(drop=True)
     table_df_filtered["rank"] = range(1, len(table_df_filtered) + 1)
-    
+
     # Rebuild UI version
-    table_df_ui = table_df_filtered[["rank", "s3", "s4", "s3_full", "s4_full", "raw_rating", "net_rating"]].copy()
-    
+    table_df_ui = table_df_filtered[
+        ["rank", "s3", "s4", "s3_full", "s4_full", "raw_rating", "net_rating"]
+    ].copy()
+
+    table_df_ui["s3_mobile"] = table_df_ui["s3"].map(
+        lambda x: strip_parens(get_full_skill_name(x))
+    )
+    table_df_ui["s4_mobile"] = table_df_ui["s4"].map(
+        lambda x: strip_parens(get_full_skill_name(x))
+    )
+
     table_df_ui["raw_rating"] = table_df_ui["raw_rating"].map(
         lambda v: f"{float(v):.2f}" if pd.notna(v) else "—"
     )
-    
+
     table_df_ui["_s3_code"] = table_df_filtered["s3"].values
-    table_df_ui["_s4_code"] = table_df_filtered["s4"].values    
-    
+    table_df_ui["_s4_code"] = table_df_filtered["s4"].values
+
     if len(axis_skills) < 2:
         msg = f"Filter '{filter_mode}' left fewer than 2 skills on the heat map. Try switching back to 'All'."
         return step3_title, heatmap_title, msg, table_df_ui.to_dict("records"), go.Figure()
@@ -4438,7 +4471,7 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
 
     base_text_size = 13
     base_tick_size = 12
-
+    
     if filter_mode == "top10":
         text_font_size = int(base_text_size * 1.5)
         tick_font_size = int(base_tick_size * 1.4)
@@ -5040,8 +5073,12 @@ def update_detail_skill_options(class_code, s1, s2, s3, s4):
 
         if current_val in pool:
             values_out.append(current_val)
+        elif current_val:
+            # Preserve routed values during callback timing/race conditions.
+            values_out.append(current_val)
         else:
-            values_out.append(pool[0] if pool else None)
+            # Do not auto-fill Skill 1 as Acr/etc. Leave blank until user/routing sets it.
+            values_out.append(None)
 
     return (
         options_out[0], options_out[1], options_out[2], options_out[3],

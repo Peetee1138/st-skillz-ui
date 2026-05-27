@@ -10,7 +10,7 @@ G2,Des,Blu,Imp,Clo,Dec,Dan,ECo,Gla,EWa,Jug,Ant,Acr,Cal,Thr,Cur,All,Fin,Whi,Hin,S
 G3,War,Whi,Ass,Fin,DDl,Mar,All,Dan,Swo,Hin,Tel,Cur,Bac,Ant,Per,DCr,Cal,Gun,Thr,MaD,Dec,EWa,Cro,Eag,Par,Mai,Sup,FaL,Imp,Jug,Stu,Clo,Sur,Gla,Tou,ECo,Blu,FaH,Acr,,,,,,,,,,,,,,,,,,,,,,
 G4,DDl,War,Whi,Ass,Mar,Fin,All,Dan,Tel,Dag,Hin,Cur,DCr,Ant,Per,Bac,Cal,Gun,Thr,MaD,EWa,Dec,Axe,Par,Eag,Sup,Mai,FaL,Imp,Blu,Stu,Jug,Sur,Clo,Tou,Acr,ECo,Gla,FaH,,,,,,,,,,,,,,,,,,,,,,
 G5,Clo,Dan,War,ECo,Blu,Imp,Mar,Ant,Cur,Gla,Ass,DDl,EWa,Cal,Jug,Thr,Dec,Whi,Acr,Par,Fin,Per,Dag,Sup,DCr,Mai,Swo,Hin,Bow,Stu,FaL,Tel,MaD,Bac,Sur,Tou,All,FaH,Eag,,,,,,,,,,,,,,,,,,,,,,
-G6,Ade,Mar,Imp,Dan,Whi,Ant,Ass,Jug,Cur,Clo,Fin,Cal,ECo,Gla,DDl,Hin,Par,Wan,Thr,Blu,Per,All,Tel,Ins,DCr,War,EWa,Bac,Stu,Sur,Tou,Acr,MaD,Dec,Sup,Cro,Mai,FaH,FaL,Bow,Eag,Dag,,,,,,,,,,,,,,,,,,,
+G6,Clo,Blu,Dan,Gla,ECo,War,Ade,Ant,Imp,Jug,EWa,Cur,Mar,Cal,Thr,Acr,Dec,Ins,Par,Dag,Ass,Sup,Whi,Mai,Wan,Fin,FaL,DDl,Hin,Stu,Bow,Per,MaD,Sur,Cro,Tou,Bac,DCr,All,Tel,FaH,Eag,,,,,,,,,,,,,,,,,,,
 G7,Bat,Whi,DDl,Dan,All,Ass,ShM,Fin,Pow,Clo,Tel,Hin,Ant,Sun,Gla,Cur,Jug,Par,ECo,Bac,Cal,Dec,DCr,Per,Thr,EWa,Imp,Blu,OnG,MaD,Sup,Eag,Mai,Acr,Stu,Sur,Tou,FaL,FaH,,,,,,,,,,,,,,,,,,,,,,
 R1,War,Dag,Whi,Pow,Swo,Sun,PFr,Spe,Fla,SBl,Cal,All,Tel,Mac,DDl,Bat,Per,Thr,Cle,DCr,Smi,Eag,Dec,Mai,EWa,FaL,Sup,Blu,OnG,ECo,Tou,Acr,ShM,Sur,Jug,Stu,Thi,FaH,EPl,Imp,,,,,,,,,,,,,,,,,,,,,
 R2,War,PFr,EWa,SBl,Bat,Swo,All,Fla,Whi,EPl,Pow,Thi,Tel,Sup,Axe,Mai,Jug,Smi,Sun,Imp,FaL,Cal,DDl,Per,OnG,Spe,Thr,Mac,Cle,Stu,Eag,DCr,Sur,Tou,ECo,Dec,FaH,ShM,Blu,Acr,,,,,,,,,,,,,,,,,,,,,
