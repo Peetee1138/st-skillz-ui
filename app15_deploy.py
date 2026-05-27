@@ -2701,7 +2701,7 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
             paper_bgcolor="white",
             plot_bgcolor="white",
             height=420,
-            margin=dict(l=10, r=20, t=70, b=40),
+            margin=dict(l=0, r=10, t=70, b=40),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         )
         fig.add_annotation(
@@ -2861,6 +2861,9 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
         tick0=0,
         dtick=y_dtick,
         rangemode="tozero",
+        title_text="",
+        showticklabels=False,
+        ticks="",
     )
     
     fig.update_xaxes(title_text="Raw Rating")
