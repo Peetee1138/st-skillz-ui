@@ -1,4 +1,15 @@
-# app15.py - v0.15
+# app16.py - v0.16
+# ==================================================
+# ShopTitans Web Interface for Hero Skills Database
+# ==================================================
+#
+# Purpose:
+# -------
+# SkillzUI is a Dash web application for exploring Shop Titans hero skill
+# ratings, skill combinations, class summaries, and reroll modeling.
+#
+# Version History:
+# ----------------
 #   0.2   - Implement 2-Skill Explorer and Skill Combo Detail locally for G2-G4 (20251207)
 #         - initial deployment to GitHub / OnRender
 #         - transition to .npz for 
@@ -16,6 +27,62 @@
 #   0.14  - [abandoned: Reddit login] Add 3-free logins to give time to add users to white list
 #   0.15  - Updated code to use consistent terminology, modified to be mobile friendly
 #   0.15a - Tweaks to make charts more mobile friendly - sub-version to avoid damaging v0.15
+#   0.16  - Clean up & refactor code
+#
+# Naming Convention
+# -----------------
+# Functions, constants, styles, and callback helpers should follow:
+#
+#     <geography>_<purpose>
+#
+# Geography prefixes:
+#     glob_       Globally used helper, style, data loader, or constant
+#     auth_       Authentication / Discord login / Flask route logic
+#     app_        Dash app construction and top-level layout
+#     t1_         Tab 1: 2-Skill Explorer
+#     t1_f1_      Tab 1, Frame 1
+#     t1_f2_      Tab 1, Frame 2
+#     t1_f3_      Tab 1, Frame 3
+#     t2_         Tab 2: Skill Combo Detail
+#     t2_f1_      Tab 2, Frame 1
+#     t2_f2_      Tab 2, Frame 2
+#     t2_f3_      Tab 2, Frame 3
+#     t2_f4_      Tab 2, Frame 4
+#     t3_         Tab 3: Single Skill Info
+#     t4_         Tab 4: Class Summary
+#     t5_         Tab 5: Help / Using This Tool
+#
+# Examples:
+#     glob_load_skill_metadata()
+#     glob_format_pct_01()
+#     t1_build_layout()
+#     t1_f2_build_combo_table()
+#     t2_f4_build_results_table()
+#     t3_f3_build_distribution_figure()
+#     t4_cb_route_clicks()
+#
+# File Organization
+# -----------------
+# 01 Imports
+# 02 Configuration and constants
+# 03 App/server/auth setup
+# 04 Data loading and caches
+# 05 Global helpers
+# 06 Shared UI helpers
+# 07 Tab 1 builders
+# 08 Tab 2 builders
+# 09 Tab 3 builders
+# 10 Tab 4 builders
+# 11 Tab 5 builders
+# 12 App layout
+# 13 Callbacks
+# 14 Main runner
+#
+# Refactor Rule
+# -------------
+# No legacy aliases should remain. When a function is renamed, update every
+# reference and remove the old name.
+# =============================================================================
 
 
 import os
@@ -65,7 +132,7 @@ LOGIN_LOG_FILE = BASE_DIR / "login_attempts.csv"
 
 FREE_USES_ALLOWED = 3
 
-def get_class_bundle_dir(class_code: str) -> Path:
+def glob_get_class_bundle_dir(class_code: str) -> Path:
     return CLASS_DIR / str(class_code).strip()
     
 CLASS_SKILL_ASSESS_FILES = {
@@ -157,7 +224,7 @@ CLICKABLE_ICON_BUTTON_STYLE = {
     "justifyContent": "center",        # horizontal centering
 }
 
-TAB4_LINK_BUTTON_STYLE = {
+T4LINK_BUTTON_STYLE = {
     "border": "2px solid #0645AD",
     "borderRadius": "4px",
     "padding": "2px 6px",
@@ -172,7 +239,7 @@ TAB4_LINK_BUTTON_STYLE = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_ICON_ROW_STYLE = {
+T4ICON_ROW_STYLE = {
     "display": "inline-flex",
     "alignItems": "center",
     "justifyContent": "center",
@@ -180,7 +247,7 @@ TAB4_ICON_ROW_STYLE = {
     "flexWrap": "nowrap",
 }
 
-TAB4_CODE_INLINE_STYLE = {
+T4CODE_INLINE_STYLE = {
     "display": "inline-flex",
     "alignItems": "center",
     "justifyContent": "center",
@@ -190,13 +257,13 @@ TAB4_CODE_INLINE_STYLE = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_TABLE_STYLE = {
+T4TABLE_STYLE = {
     "borderCollapse": "collapse",
     "width": "100%",
     "backgroundColor": "white",
 }
 
-TAB4_TH_STYLE_CLASS = {
+T4TH_STYLE_CLASS = {
     "border": "1px solid #444",
     "backgroundColor": "#444444",
     "color": "white",
@@ -206,7 +273,7 @@ TAB4_TH_STYLE_CLASS = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_TH_STYLE_KEY = {
+T4TH_STYLE_KEY = {
     "border": "1px solid #8a6d00",
     "backgroundColor": "#b8860b",
     "color": "white",
@@ -216,7 +283,7 @@ TAB4_TH_STYLE_KEY = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_TH_STYLE_CORE = {
+T4TH_STYLE_CORE = {
     "border": "1px solid #1f3a5f",
     "backgroundColor": "#274c77",
     "color": "white",
@@ -226,7 +293,7 @@ TAB4_TH_STYLE_CORE = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_TH_STYLE_BUILD = {
+T4TH_STYLE_BUILD = {
     "border": "1px solid #5a1f2b",
     "backgroundColor": "#7a2838",
     "color": "white",
@@ -236,7 +303,7 @@ TAB4_TH_STYLE_BUILD = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_TD_STYLE = {
+T4TD_STYLE = {
     "border": "1px solid #888",
     "padding": "4px 6px",
     "fontSize": "13px",
@@ -245,20 +312,20 @@ TAB4_TD_STYLE = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_CLASS_CELL_STYLE = {
-    **TAB4_TD_STYLE,
+T4CLASS_CELL_STYLE = {
+    **T4TD_STYLE,
     "textAlign": "left",
     "fontWeight": "700",
     "fontSize": "26px",
 }
 
-TAB4_MAX_CELL_STYLE = {
-    **TAB4_TD_STYLE,
+T4MAX_CELL_STYLE = {
+    **T4TD_STYLE,
     "fontWeight": "700",
     "fontSize": "26px",
 }
 
-TAB4_CLASS_LINE_STYLE = {
+T4CLASS_LINE_STYLE = {
     "display": "inline-flex",
     "alignItems": "center",
     "justifyContent": "flex-start",
@@ -266,14 +333,14 @@ TAB4_CLASS_LINE_STYLE = {
     "whiteSpace": "nowrap",
 }
 
-TAB4_ROW_BG_GREEN = "#d9ead3"
-TAB4_ROW_BG_GREEN_CLASS = "#b6d7a8"
+T4ROW_BG_GREEN = "#d9ead3"
+T4ROW_BG_GREEN_CLASS = "#b6d7a8"
 
-TAB4_ROW_BG_BLUE = "#d9eaf7"
-TAB4_ROW_BG_BLUE_CLASS = "#9fc5e8"
+T4ROW_BG_BLUE = "#d9eaf7"
+T4ROW_BG_BLUE_CLASS = "#9fc5e8"
 
-TAB4_ROW_BG_RED = "#f4d6d6"
-TAB4_ROW_BG_RED_CLASS = "#ea9999"
+T4ROW_BG_RED = "#f4d6d6"
+T4ROW_BG_RED_CLASS = "#ea9999"
 RATING_HIST_BINS = list(range(0, 101, 5))  # 0,5,10,...,100
 RATING_HIST_COLS_ORDERED = [f"rating_hist_{b}" for b in RATING_HIST_BINS]
 RATING_BIN_CENTERS = {f"rating_hist_{b}": float(b) for b in RATING_HIST_BINS}
@@ -285,22 +352,22 @@ T2_F2_LABEL_COL_W = "calc(100% - 120px)"
 
 # ---------- DATA LOAD HELPERS ----------
 
-def load_hero_codes():
+def glob_load_hero_codes():
     df = pd.read_csv(HERO_CODES_CSV)
     return df
 
-def load_skill_metadata():
+def glob_load_skill_metadata():
     df = pd.read_csv(SKILL_CODES_CSV)
     print("Loaded skill codes with columns:", list(df.columns))
 
     # expected columns
     # short_name, full_name, rarity, skill_id
     if "short_name" not in df.columns:
-        raise ValueError("[load_skill_metadata] missing column: short_name")
+        raise ValueError("[glob_load_skill_metadata] missing column: short_name")
     if "full_name" not in df.columns:
-        raise ValueError("[load_skill_metadata] missing column: full_name")
+        raise ValueError("[glob_load_skill_metadata] missing column: full_name")
     if "skill_id" not in df.columns:
-        raise ValueError("[load_skill_metadata] missing column: skill_id")
+        raise ValueError("[glob_load_skill_metadata] missing column: skill_id")
 
     name_map = df.set_index("short_name")["full_name"].to_dict()
     rarity_map = df.set_index("short_name")["rarity"].to_dict() if "rarity" in df.columns else {}
@@ -309,17 +376,17 @@ def load_skill_metadata():
 
     return name_map, rarity_map, code_to_id, id_to_code
     
-def skill_label(code: str) -> str:
+def glob_skill_label(code: str) -> str:
     """
     Canonical label: 'ABC - Full Skill Name'
     Used everywhere we build dropdown options.
     """
     if not code:
         return ""
-    full = strip_parens(get_full_skill_name(code))
+    full = glob_strip_parens(glob_get_full_skill_name(code))
     return f"{code} - {full}"
 
-def load_skill_sort_order():
+def glob_load_skill_sort_order():
     """
     Load db_skill_sort_order.csv as a mapping:
       class_code -> [skill_code1, skill_code2, ...] in desired order.
@@ -341,7 +408,7 @@ def load_skill_sort_order():
         mapping[code] = skills
     return mapping
 
-def load_slot_odds():
+def glob_load_slot_odds():
     """
     Load db_slot_odds.csv into:
       slot_odds_map = {
@@ -358,7 +425,7 @@ def load_slot_odds():
     req = {"slot", "pct_com", "pct_rare", "pct_epic"}
     missing = req - set(df.columns)
     if missing:
-        raise ValueError(f"[load_slot_odds] missing columns: {sorted(missing)}")
+        raise ValueError(f"[glob_load_slot_odds] missing columns: {sorted(missing)}")
 
     out = {}
     for _, row in df.iterrows():
@@ -375,7 +442,7 @@ def load_slot_odds():
 
     return out
 
-def parse_skill_codes(skill_code: str):
+def glob_parse_skill_codes(skill_code: str):
     """
     Example: 'G2AcrAllAntAss' -> ('G2', ['Acr','All','Ant','Ass'])
     """
@@ -383,7 +450,7 @@ def parse_skill_codes(skill_code: str):
     codes = [skill_code[2 + i*3 : 2 + (i+1)*3] for i in range(4)]
     return cls, codes
 
-def canonical_skill_string(s1, s2, s3, s4) -> str:
+def glob_canonical_skill_string(s1, s2, s3, s4) -> str:
     """
     Return a canonical, alphabetized 4-skill string, e.g.
       ('Ass','All','Dan','Des') -> 'AllAssDanDes'
@@ -392,15 +459,15 @@ def canonical_skill_string(s1, s2, s3, s4) -> str:
     skills = [s for s in skills if s]   # defensive
     return "".join(sorted(skills))
 
-hero_codes_df = load_hero_codes()
-skill_name_map, skill_rarity_map, skill_code_to_id, skill_id_to_code = load_skill_metadata()
-skill_sort_order = load_skill_sort_order()
-slot_odds_map = load_slot_odds()
+hero_codes_df = glob_load_hero_codes()
+skill_name_map, skill_rarity_map, skill_code_to_id, skill_id_to_code = glob_load_skill_metadata()
+skill_sort_order = glob_load_skill_sort_order()
+slot_odds_map = glob_load_slot_odds()
 
 _class_bundle_cache = {}
 _single_skill_assess_cache = {}
 
-def canonical_full_skill_code(class_code: str, skills: list[str]) -> str | None:
+def glob_canonical_full_skill_code(class_code: str, skills: list[str]) -> str | None:
     """
     Build canonical full skill_code for exact bundle lookup.
     Example:
@@ -416,7 +483,7 @@ def canonical_full_skill_code(class_code: str, skills: list[str]) -> str | None:
 
     return f"{str(class_code).strip()}{''.join(sorted(vals))}"
 
-def get_class_bundle(class_code: str):
+def glob_get_class_bundle(class_code: str):
     """
     Lazy-load per-class numeric bundle from:
       classes/<class_code>/*.npy
@@ -430,7 +497,7 @@ def get_class_bundle(class_code: str):
     if class_code in _class_bundle_cache:
         return _class_bundle_cache[class_code]
 
-    class_dir = get_class_bundle_dir(class_code)
+    class_dir = glob_get_class_bundle_dir(class_code)
     if not class_dir.exists():
         print(f"[get_class_bundle] Missing class dir for {class_code}: {class_dir}")
         _class_bundle_cache[class_code] = None
@@ -476,7 +543,7 @@ def get_class_bundle(class_code: str):
     return bundle
 
 
-def get_skill_rows_for_class(bundle: dict, skill_code: str) -> np.ndarray:
+def glob_get_skill_rows_for_class(bundle: dict, skill_code: str) -> np.ndarray:
     """
     Fast row lookup for 'all rows containing this skill'.
     Uses skill_index.npz if present, else falls back to scanning s1..s4.
@@ -503,7 +570,7 @@ def get_skill_rows_for_class(bundle: dict, skill_code: str) -> np.ndarray:
     return np.where(mask)[0].astype(np.int32)
 
 
-def net_rating_display(v) -> str:
+def glob_net_rating_display(v) -> str:
     try:
         x = float(v)
     except Exception:
@@ -511,7 +578,7 @@ def net_rating_display(v) -> str:
     return "n/q" if x < 0 else f"{x:.2f}"
 
 
-def get_skill_codes_for_row(bundle: dict, row_idx: int) -> list[str]:
+def glob_get_skill_codes_for_row(bundle: dict, row_idx: int) -> list[str]:
     skill_ids = [
         int(bundle["s1"][row_idx]),
         int(bundle["s2"][row_idx]),
@@ -521,7 +588,7 @@ def get_skill_codes_for_row(bundle: dict, row_idx: int) -> list[str]:
     return [skill_id_to_code[i] for i in skill_ids]
 
 
-def find_combo_index(bundle: dict, class_code: str, skills: list[str]):
+def glob_find_combo_index(bundle: dict, class_code: str, skills: list[str]):
     """
     Exact combo match using the exported skill_code_index.npz.
     Returns row index or None.
@@ -529,7 +596,7 @@ def find_combo_index(bundle: dict, class_code: str, skills: list[str]):
     if bundle is None or not class_code or not skills or len(skills) != 4:
         return None
 
-    full_code = canonical_full_skill_code(class_code, skills)
+    full_code = glob_canonical_full_skill_code(class_code, skills)
     if not full_code:
         return None
 
@@ -549,15 +616,15 @@ def find_combo_index(bundle: dict, class_code: str, skills: list[str]):
 
     return int(rows[matches[0]])
 
-def build_combo_row(bundle: dict, class_code: str, row_idx: int) -> dict:
-    skill_codes = get_skill_codes_for_row(bundle, row_idx)
+def glob_build_combo_row(bundle: dict, class_code: str, row_idx: int) -> dict:
+    skill_codes = glob_get_skill_codes_for_row(bundle, row_idx)
 
     return {
         "class_code": class_code,
         "skill_code": f"{class_code}{''.join(skill_codes)}",
         "skill_list": skill_codes,
         "raw_rating": float(bundle["raw_rating"][row_idx]),
-        "net_rating": net_rating_display(bundle["net_rating"][row_idx]),
+        "net_rating": glob_net_rating_display(bundle["net_rating"][row_idx]),
         "rating_pctile": float(bundle["rating_pctile"][row_idx]),
         "c_r1": float(bundle["c_r1"][row_idx]),
         "c_r2": float(bundle["c_r2"][row_idx]),
@@ -566,7 +633,7 @@ def build_combo_row(bundle: dict, class_code: str, row_idx: int) -> dict:
     }
 
 # Map hero class codes -> name + icon
-# Assumes hero class icons are named like G2.png, G3.png etc in assets/detail_icons
+# Assumes hero class icons are named like G2.png, G3.png etc in assets/glob_detail_icons
 class_meta = {
     row["Code"]: {
         "name": row["Hero_Class"],
@@ -620,7 +687,7 @@ for code, rarity in skill_rarity_map.items():
         }
     )
 
-def get_base_skills_for_class(class_code: str) -> list[str]:
+def glob_get_base_skills_for_class(class_code: str) -> list[str]:
     """
     Robust skill pool for a class.
 
@@ -632,7 +699,7 @@ def get_base_skills_for_class(class_code: str) -> list[str]:
     if not class_code:
         return []
 
-    df_assess = get_single_skill_assess_df(class_code)
+    df_assess = glob_get_single_skill_assess_df(class_code)
     if df_assess is not None and not df_assess.empty:
         if "sk_name" in df_assess.columns:
             vals = sorted(set(df_assess["sk_name"].dropna().astype(str).str.strip()))
@@ -649,18 +716,18 @@ def get_base_skills_for_class(class_code: str) -> list[str]:
 
     return sorted(skill_name_map.keys())
     
-def get_full_skill_name(short_code: str) -> str:
+def glob_get_full_skill_name(short_code: str) -> str:
     """Return full skill name from 3-letter code, or the code if missing."""
     return skill_name_map.get(short_code, short_code)
 
 
-def strip_parens(name: str) -> str:
+def glob_strip_parens(name: str) -> str:
     """Remove ' ( ... )' parts from a skill name for titles."""
     return re.sub(r"\s*\([^)]*\)", "", name).strip()
 
 # ---------- SKILL INCOMPATIBILITIES ----------
 
-def build_incompat_dict_from_long_form(df: pd.DataFrame) -> dict:
+def glob_build_incompat_dict_from_long_form(df: pd.DataFrame) -> dict:
     """
     Turn a 'long form' incompat table into a symmetric dict:
       {'Acr': {'Blu', 'Xxx'}, 'Blu': {'Acr', 'Yyy'}, ...}
@@ -692,9 +759,9 @@ def build_incompat_dict_from_long_form(df: pd.DataFrame) -> dict:
 
 # Load once at startup
 incompat_df = pd.read_csv(SKILL_INCOMPAT_CSV)
-incompat_dict = build_incompat_dict_from_long_form(incompat_df)
+incompat_dict = glob_build_incompat_dict_from_long_form(incompat_df)
 
-def filtered_skill_pool(
+def glob_filtered_skill_pool(
     base_skills: list[str],
     fixed_skills: list[str],
 ) -> list[str]:
@@ -762,9 +829,9 @@ def build_skill_order_from_assess(df_assess: pd.DataFrame, skills_in_scope: list
     return ordered + sorted(missing)
 
     
-def detail_icon(filename, class_name="detail-icon", title=None):
+def glob_get_detail_icon(filename, class_name="detail-icon", title=None):
     """
-    Small helper to render an <img> from assets/detail_icons.
+    Small helper to render an <img> from assets/glob_detail_icons.
     Used for quality & special icons in the detail view.
     """
     return html.Img(
@@ -773,7 +840,7 @@ def detail_icon(filename, class_name="detail-icon", title=None):
         title=title or filename,
     )
     
-def get_quality_icons(rating_pctile_raw, net_rating):
+def glob_get_quality_icons(rating_pctile_raw, net_rating):
     """
     Returns a list of html.Img components according to the quality rules.
 
@@ -785,39 +852,39 @@ def get_quality_icons(rating_pctile_raw, net_rating):
 
     # Non-qualifying → always D face
     if net_str == "n/q":
-        icons.append(detail_icon("icon_shop_face_d.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_shop_face_d.png", class_name="quality-icon"))
         return icons
 
     try:
         pct = float(rating_pctile_raw) * 100.0  # 0–100
     except (TypeError, ValueError):
-        icons.append(detail_icon("icon_shop_face_d.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_shop_face_d.png", class_name="quality-icon"))
         return icons
 
     # Thresholds on percentile
     if pct < 90.0:
-        icons.append(detail_icon("icon_shop_face_C.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_shop_face_C.png", class_name="quality-icon"))
     elif pct < 95.0:
-        icons.append(detail_icon("icon_shop_face_B.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_shop_face_B.png", class_name="quality-icon"))
     elif pct < 99.0:
-        icons.append(detail_icon("icon_shop_face_A.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_shop_face_A.png", class_name="quality-icon"))
     elif pct < 99.5:
-        icons.append(detail_icon("icon_shop_face_S.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_shop_face_S.png", class_name="quality-icon"))
     elif pct < 99.8:
-        icons.append(detail_icon("icon_global_gem.png", class_name="quality-icon"))
+        icons.append(glob_get_detail_icon("icon_global_gem.png", class_name="quality-icon"))
     elif pct < 99.9:
         icons.extend(
             [
-                detail_icon("icon_global_gem.png", class_name="quality-icon"),
-                detail_icon("icon_global_gem.png", class_name="quality-icon"),
+                glob_get_detail_icon("icon_global_gem.png", class_name="quality-icon"),
+                glob_get_detail_icon("icon_global_gem.png", class_name="quality-icon"),
             ]
         )
     else:
         icons.extend(
             [
-                detail_icon("icon_global_gem.png", class_name="quality-icon"),
-                detail_icon("icon_global_gem.png", class_name="quality-icon"),
-                detail_icon("icon_global_gem.png", class_name="quality-icon"),
+                glob_get_detail_icon("icon_global_gem.png", class_name="quality-icon"),
+                glob_get_detail_icon("icon_global_gem.png", class_name="quality-icon"),
+                glob_get_detail_icon("icon_global_gem.png", class_name="quality-icon"),
             ]
         )
 
@@ -825,7 +892,7 @@ def get_quality_icons(rating_pctile_raw, net_rating):
 
 
 
-def format_skill_name_with_info(full_name):
+def glob_format_skill_name_with_info(full_name):
     """
     Splits 'SkillName (Some info)' into:
       'SkillName ' + '(' + 'Some info' + ')'
@@ -843,7 +910,7 @@ def format_skill_name_with_info(full_name):
         html.Span(f"({rest})", className="skill-name-info"),
     ])
 
-def build_class_and_skills_line(row, class_meta, skill_lookup):
+def t2_f2_build_class_and_skills_line(row, class_meta, skill_lookup):
     """
     Render the class + skills line for Tab 2, Frame 2.
 
@@ -886,7 +953,7 @@ def build_class_and_skills_line(row, class_meta, skill_lookup):
                     style=CLICKABLE_ICON_BUTTON_STYLE,
                 ),
                 html.Span(" ", className="skill-label-icon-space"),
-                format_skill_name_with_info(full_name),
+                glob_format_skill_name_with_info(full_name),
             ],
             className="headline-skill-chunk",
         )
@@ -937,7 +1004,7 @@ def build_class_and_skills_line(row, class_meta, skill_lookup):
         className="class-skills-line",
     )
     
-def build_build_headline(row):
+def t2_f2_build_headline(row):
     raw_rating = float(row["raw_rating"])
     rating_pctile_raw = float(row["rating_pctile"])  # 0–1 scale in data
     rating_pctile_pct = rating_pctile_raw * 100.0    # 0–100
@@ -954,7 +1021,7 @@ def build_build_headline(row):
     if str(net_rating).strip().lower() == "n/q":
         rating_block_children.append(html.Span(" ", className="headline-space"))
         rating_block_children.append(
-            detail_icon(
+            glob_get_detail_icon(
                 "icon_quest_broken.png",
                 class_name="headline-nq-icon",
                 title="Non-Qualifying (Broken Quest)",
@@ -977,8 +1044,8 @@ def build_build_headline(row):
     )
 
     # Quality + trend icons (trend driven by mr_rating_cat / rating_cat)
-    quality_icons = get_quality_icons(rating_pctile_raw, net_rating)
-    trend_icons = get_trend_icons(row)
+    quality_icons = glob_get_quality_icons(rating_pctile_raw, net_rating)
+    trend_icons = glob_get_trend_icons(row)
 
     # Insert a | between quality_icons and trend_icons (only if trend exists)
     icons_children = list(quality_icons)
@@ -1000,7 +1067,7 @@ def build_build_headline(row):
     )
 
 
-def get_trend_icons(row):
+def glob_get_trend_icons(row):
     raw = row.get("rating_cat", row.get("mr_rating_cat", None))
     try:
         cat = int(raw)
@@ -1025,7 +1092,7 @@ def get_trend_icons(row):
         )
     ]
     
-def build_tab2_frame2_section1(row, class_meta, skill_lookup):
+def t2_f2_build_detail_section(row, class_meta, skill_lookup):
     """
     Frame 2 layout for Tab 2:
 
@@ -1037,8 +1104,8 @@ def build_tab2_frame2_section1(row, class_meta, skill_lookup):
     """
     return html.Div(
         [
-            build_class_and_skills_line(row, class_meta, skill_lookup),
-            build_build_headline(row),
+            t2_f2_build_class_and_skills_line(row, class_meta, skill_lookup),
+            t2_f2_build_headline(row),
             html.Hr(style={"margin": "8px 0"}),
 
             # two tables → one flex row, top-aligned
@@ -1081,7 +1148,7 @@ def build_tab2_frame2_section1(row, class_meta, skill_lookup):
         className="tab2-frame2-build-section",
     )
 
-def format_pctile_01_to_str(p):
+def glob_format_pctile_01_to_str(p):
     """
     Convert a 0–1 percentile to a '99.68 %ile'-style string.
     Returns '—' if p is None/NaN.
@@ -1113,22 +1180,22 @@ def build_build_substats_table(row):
         {
             "attr": "Quest Survival Rate",
             "result": f"{float(qsr):.3f}%",
-            "pct": format_pctile_01_to_str(qsr_pct),
+            "pct": glob_format_pctile_01_to_str(qsr_pct),
         },
         {
             "attr": "Average Rounds to Win",
             "result": f"{float(avg_rds):.3f} rounds",
-            "pct": format_pctile_01_to_str(avg_rds_pct),
+            "pct": glob_format_pctile_01_to_str(avg_rds_pct),
         },
         {
             "attr": "Lowest Hero Survival Rate",
             "result": f"{float(min_h):.3f}%",
-            "pct": format_pctile_01_to_str(min_h_pct),
+            "pct": glob_format_pctile_01_to_str(min_h_pct),
         },
         {
             "attr": "Lowest Hero Survival Margin",
             "result": f"{float(min_sur_margin):.2f} rounds",
-            "pct": format_pctile_01_to_str(min_sur_margin_pct),
+            "pct": glob_format_pctile_01_to_str(min_sur_margin_pct),
         },
         {
             "attr": "Rounds to Win 95% of the Time",
@@ -1357,14 +1424,24 @@ def build_rating_components_table(row):
         },
     )
 
-def build_single_skill_table(row):
+# =============================================================================
+# 08 TAB 2 BUILDERS — Skill Combo Detail
+# =============================================================================
+# Tab 2 contains:
+#   Frame 1: class + four skill selectors
+#   Frame 2: selected build detail / headline / per-skill table
+#   Frame 3: percentile distribution chart
+#   Frame 4: what-if reroll model
+# =============================================================================
+
+def build_single_skill_table(row):    
     """
     Right-hand table: per-skill stats for the 4 skills in this build.
 
       Columns: [icon] | Skill Name | Rating & Tier | Sparkline
     """
     class_code = row["class_code"]
-    df_assess = get_single_skill_assess_df(class_code)
+    df_assess = glob_get_single_skill_assess_df(class_code)
 
     # Index assess table by 'sk_name' if present
     assess_index = {}
@@ -1441,9 +1518,9 @@ def build_single_skill_table(row):
             style=CLICKABLE_ICON_BUTTON_STYLE,   # ✅ add this
         )
 
-        skill_label_cell = html.Span(
+        glob_skill_label_cell = html.Span(
             [
-                html.Span(skill_label(sc), className="skill-label-full"),
+                html.Span(glob_skill_label(sc), className="skill-label-full"),
                 html.Span(sc, className="skill-label-code"),
             ]
         )
@@ -1485,14 +1562,14 @@ def build_single_skill_table(row):
         if tier_icon is not None:
             rating_children.append(tier_icon)
 
-        spark = single_skill_sparkline(nq_pct, sub80_pct, pct80_95, pct95)
+        spark = glob_build_single_skill_sparkline(nq_pct, sub80_pct, pct80_95, pct95)
 
         body_rows.append(
             html.Tr(
                 [
                     html.Td(icon_cell, style=icon_cell_style),
                     html.Td(
-                        skill_label_cell,
+                        glob_skill_label_cell,
                         style={**body_cell_style, "fontSize": "16px"},  # roughly 2× base
                     ),
                     html.Td(
@@ -1522,7 +1599,7 @@ def build_single_skill_table(row):
     )
 
 # ---------- Build Detail View: Build Per-Skill Table
-def get_single_skill_assess_df(class_code: str):
+def glob_get_single_skill_assess_df(class_code: str):
     if not class_code:
         return None
 
@@ -1564,9 +1641,9 @@ def single_skill_tier_icon(tier):
     if not fn:
         return None
 
-    return detail_icon(fn, class_name="single-skill-tier-icon")
+    return glob_get_detail_icon(fn, class_name="single-skill-tier-icon")
 
-def single_skill_sparkline(nq, sub80, pct80_95, pct95):
+def glob_build_single_skill_sparkline(nq, sub80, pct80_95, pct95):
     """
     Build an inline 'sparkline' bar made of 4 colored segments:
       purple (nq), red (sub80), yellow (80-95), green (95+)
@@ -1598,11 +1675,11 @@ def single_skill_sparkline(nq, sub80, pct80_95, pct95):
 
     return html.Div(segments, className="single-skill-sparkline")
 
-# -------------------------------
-# Tab2 Frame4: What-If Reroll Model
-# -------------------------------
+# -----------------------------------------------------------------------------
+# Tab 2, Frame 4 — What-If Reroll Model helpers
+# -----------------------------------------------------------------------------
 
-def fmt_pct_01(p):
+def glob_fmt_pct_01(p):
     """0-1 -> '99.6%' style string."""
     if p is None or pd.isna(p):
         return "—"
@@ -1611,7 +1688,7 @@ def fmt_pct_01(p):
     except Exception:
         return "—"
 
-def fmt_pct_100(p):
+def glob_fmt_pct_100(p):
     """0-100 -> '12.5%' style string."""
     if p is None or pd.isna(p):
         return "—"
@@ -1620,7 +1697,7 @@ def fmt_pct_100(p):
     except Exception:
         return "—"
 
-def fmt_expected_rolls(prob_01):
+def glob_fmt_expected_rolls(prob_01):
     """Expected rolls = 1/p."""
     try:
         p = float(prob_01)
@@ -1668,7 +1745,7 @@ def get_valid_reroll_targets(class_code: str, selected_skills: list[str], reroll
     if reroll_slot not in (1, 2, 3, 4):
         return []
 
-    base_skills = get_base_skills_for_class(class_code)
+    base_skills = glob_get_base_skills_for_class(class_code)
     if not base_skills:
         return []
 
@@ -1676,7 +1753,7 @@ def get_valid_reroll_targets(class_code: str, selected_skills: list[str], reroll
     skill_being_replaced = selected_skills[idx]
     fixed_others = [s for i, s in enumerate(selected_skills) if i != idx and s]
 
-    pool = filtered_skill_pool(base_skills, fixed_others)
+    pool = glob_filtered_skill_pool(base_skills, fixed_others)
 
     # remove duplicates already present in the other 3 slots
     used_elsewhere = set(fixed_others)
@@ -1741,8 +1818,8 @@ def build_reroll_result_row(class_code: str, selected_skills: list[str], reroll_
     out_skills = list(selected_skills)
     out_skills[reroll_slot - 1] = target_skill
 
-    bundle = get_class_bundle(class_code)
-    row_idx = find_combo_index(bundle, class_code, out_skills) if bundle is not None else None
+    bundle = glob_get_class_bundle(class_code)
+    row_idx = glob_find_combo_index(bundle, class_code, out_skills) if bundle is not None else None
     if row_idx is None:
         return {
             "skill_list": out_skills,
@@ -1755,11 +1832,11 @@ def build_reroll_result_row(class_code: str, selected_skills: list[str], reroll_
             "target_skill": target_skill,
         }
 
-    modeled = build_combo_row(bundle, class_code, row_idx)
+    modeled = glob_build_combo_row(bundle, class_code, row_idx)
 
     # current build lookup
-    current_idx = find_combo_index(bundle, class_code, selected_skills)
-    current_row = build_combo_row(bundle, class_code, current_idx) if current_idx is not None else None
+    current_idx = glob_find_combo_index(bundle, class_code, selected_skills)
+    current_row = glob_build_combo_row(bundle, class_code, current_idx) if current_idx is not None else None
 
     raw_rating = modeled.get("raw_rating")
     rating_pctile = modeled.get("rating_pctile")
@@ -1803,7 +1880,7 @@ def make_skill_chip(sc: str, changed: bool = False):
         [
             html.Img(
                 src=f"/assets/skill_icons/{sc}.png",
-                title=get_full_skill_name(sc),
+                title=glob_get_full_skill_name(sc),
                 style={"height": "16px", "width": "16px"},
             ),
             html.Span(sc, style={"fontWeight": "bold", "fontSize": "11px"}),
@@ -1828,16 +1905,16 @@ def build_tab2_frame4_current_summary(class_code, s1, s2, s3, s4):
     if not class_code or not s1 or not s2 or not s3 or not s4:
         return html.Div("Select a full 4-skill build to model rerolls.")
 
-    bundle = get_class_bundle(class_code)
+    bundle = glob_get_class_bundle(class_code)
     if bundle is None:
         return html.Div(f"No data available for class {class_code}.")
 
     skills_in_order = [s1, s2, s3, s4]
-    row_idx = find_combo_index(bundle, class_code, skills_in_order)
+    row_idx = glob_find_combo_index(bundle, class_code, skills_in_order)
     if row_idx is None:
         return html.Div("Current build was not found in the class bundle.")
 
-    row = build_combo_row(bundle, class_code, row_idx)
+    row = glob_build_combo_row(bundle, class_code, row_idx)
 
     header_style = {
         "backgroundColor": "#34495e",
@@ -1878,7 +1955,7 @@ def build_tab2_frame4_current_summary(class_code, s1, s2, s3, s4):
                             html.Td(make_skill_chip(s3), style=cell_style),
                             html.Td(make_skill_chip(s4), style=cell_style),
                             html.Td(f"{float(row['raw_rating']):.1f}", style=cell_style),
-                            html.Td(fmt_pct_01(row["rating_pctile"]), style=cell_style),
+                            html.Td(glob_fmt_pct_01(row["rating_pctile"]), style=cell_style),
                         ]
                     )
                 ]
@@ -1961,17 +2038,17 @@ def build_tab2_frame4_results_table(class_code, s1, s2, s3, s4, reroll_slot, tar
                     html.Td(make_skill_chip(skills[2], changed=(changed_slot == 3)), style=cell_style),
                     html.Td(make_skill_chip(skills[3], changed=(changed_slot == 4)), style=cell_style),
                     html.Td("—" if r["raw_rating"] is None else f"{float(r['raw_rating']):.1f}", style=cell_style),
-                    html.Td(fmt_pct_01(r["rating_pctile"]), style=cell_style),
+                    html.Td(glob_fmt_pct_01(r["rating_pctile"]), style=cell_style),
                     html.Td("—" if r["delta_rating"] is None else f"{float(r['delta_rating']):+.1f}", style=cell_style),
                     html.Td("—" if r["delta_pctile"] is None else f"{float(r['delta_pctile']) * 100.0:+.1f}%", style=cell_style),
-                    html.Td(fmt_pct_100(float(r["roll_prob"]) * 100.0), style=cell_style),
-                    html.Td(fmt_expected_rolls(r["roll_prob"]), style=cell_style),
+                    html.Td(glob_fmt_pct_100(float(r["roll_prob"]) * 100.0), style=cell_style),
+                    html.Td(glob_fmt_expected_rolls(r["roll_prob"]), style=cell_style),
                 ]
             )
         )
 
     cumulative_prob = calc_any_target_roll_probability(results)
-    cumulative_exp_rolls = fmt_expected_rolls(cumulative_prob)
+    cumulative_exp_rolls = glob_fmt_expected_rolls(cumulative_prob)
 
     summary_label_style = {
         **cell_style,
@@ -1997,7 +2074,7 @@ def build_tab2_frame4_results_table(class_code, s1, s2, s3, s4, reroll_slot, tar
                 html.Td("", style=cell_style),
                 html.Td("", style=cell_style),
                 html.Td("Any Selected Target:", style=summary_label_style),
-                html.Td(fmt_pct_100(cumulative_prob * 100.0), style=summary_value_style),
+                html.Td(glob_fmt_pct_100(cumulative_prob * 100.0), style=summary_value_style),
                 html.Td(cumulative_exp_rolls, style=summary_value_style),
             ]
         )
@@ -2044,22 +2121,22 @@ def calc_any_target_roll_probability(results: list[dict]) -> float:
     return total
     
 
-# -------------------------------
-# Tab2 Frame3: Class rating histogram columns + selected build percentile
-# -------------------------------
+# -----------------------------------------------------------------------------
+# Tab 2, Frame 3 — Rating percentile distribution helpers
+# -----------------------------------------------------------------------------
 
 # Matches: cl_rating_hist_9950
-_CL_RATING_HIST_RE = re.compile(r"^cl_rating_hist_(\d+)$")
+T2_F3_HIST_RE = re.compile(r"^cl_rating_hist_(\d+)$")
 
 
-def _tab2_f3_class_hist_cols(hero_codes_df: pd.DataFrame):
+def t2_f3_class_hist_cols(hero_codes_df: pd.DataFrame):
     """
     Returns list of (bp_int, colname) sorted by bp_int.
     bp_int is 0..10000 (basis points of percentile).
     """
     cols = []
     for c in hero_codes_df.columns:
-        m = _CL_RATING_HIST_RE.match(str(c))
+        m = T2_F3_HIST_RE.match(str(c))
         if m:
             cols.append((int(m.group(1)), c))
     cols.sort(key=lambda t: t[0])
@@ -2095,12 +2172,12 @@ def _safe_pctile_from_rawratings(raw_ratings: np.ndarray, target_val: float) -> 
 
 
 def _get_raw_ratings_for_class(class_code: str):
-    bundle = get_class_bundle(class_code)
+    bundle = glob_get_class_bundle(class_code)
     if bundle is None:
         return np.array([], dtype=np.float32)
     return np.asarray(bundle["raw_rating"], dtype=np.float32)
     
-def build_tab2_f3_rating_percentile_histogram(
+def t2_f3_build_rating_percentile_histogram(
     hero_codes_df: pd.DataFrame,
     class_code: str,
     s1: str, s2: str, s3: str, s4: str,
@@ -2157,7 +2234,7 @@ def build_tab2_f3_rating_percentile_histogram(
     class_row = class_row_df.iloc[0]
 
     # --- Histogram columns (ONLY from hero_codes_df) ---
-    hist_cols = _tab2_f3_class_hist_cols(hero_codes_df)
+    hist_cols = t2_f3_class_hist_cols(hero_codes_df)
     if not hist_cols:
         fig.update_layout(template="plotly_white", xaxis_title="Percentile", yaxis_title="Count")
         fig.add_annotation(
@@ -2201,12 +2278,12 @@ def build_tab2_f3_rating_percentile_histogram(
     skill_code = None
 
     if class_code and s1 and s2 and s3 and s4:
-        skill_label = canonical_skill_string(s1, s2, s3, s4)
-        skill_code = f"{class_code}{skill_label}"
+        glob_skill_label = glob_canonical_skill_string(s1, s2, s3, s4)
+        skill_code = f"{class_code}{glob_skill_label}"
 
-        bundle = get_class_bundle(class_code)
+        bundle = glob_get_class_bundle(class_code)
         if bundle is not None:
-            row_idx = find_combo_index(bundle, class_code, [s1, s2, s3, s4])
+            row_idx = glob_find_combo_index(bundle, class_code, [s1, s2, s3, s4])
             rr_all = _get_raw_ratings_for_class(class_code)
 
             if row_idx is not None:
@@ -2266,7 +2343,7 @@ def build_tab2_f3_rating_percentile_histogram(
         annotations=annotations,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         title=f"Percentile Distribution by Rating"
-        + (f"<br>{' | '.join([strip_parens(get_full_skill_name(s)) for s in [s1, s2, s3, s4] if s])}" if skill_code else "")
+        + (f"<br>{' | '.join([glob_strip_parens(glob_get_full_skill_name(s)) for s in [s1, s2, s3, s4] if s])}" if skill_code else "")
     )
 
     # X-axis now starts at T2_F3_MIN_TO_SHOW
@@ -2287,9 +2364,17 @@ def build_tab2_f3_rating_percentile_histogram(
 
     return fig
 
-# ========== Helpers for Tab 3 ==========
-def build_single_skill_summary_block(class_code: str, skill_code: str):
-    df = get_single_skill_assess_df(class_code)
+# =============================================================================
+# 09 TAB 3 BUILDERS — Single Skill Info
+# =============================================================================
+# Tab 3 contains:
+#   Frame 1: class + single-skill selectors
+#   Frame 2: selected skill summary card
+#   Frame 3: skill ranking distribution chart
+# =============================================================================
+
+def t3_f2_build_summary_block(class_code: str, skill_code: str):
+    df = glob_get_single_skill_assess_df(class_code)
     if df is None or df.empty or "sk_name" not in df.columns:
         return f"No assessment data found for {class_code}."
 
@@ -2298,7 +2383,7 @@ def build_single_skill_summary_block(class_code: str, skill_code: str):
         return f"No data for skill {skill_code} in class {class_code}."
     row = row.iloc[0]
 
-    full_name_raw = get_full_skill_name(skill_code)
+    full_name_raw = glob_get_full_skill_name(skill_code)
 
     # Core metrics
     tier      = row.get("skill_tier", None)
@@ -2377,7 +2462,7 @@ def build_single_skill_summary_block(class_code: str, skill_code: str):
                         style=CLICKABLE_ICON_BUTTON_STYLE,  # <-- removes gray box
                     ),
                     html.Span(" ", className="skill-label-icon-space"),
-                    format_skill_name_with_info(full_name_raw),
+                    glob_format_skill_name_with_info(full_name_raw),
                 ],
                 className="single-skill-class-skill-block",
             ),
@@ -2661,27 +2746,29 @@ def build_single_skill_summary_block(class_code: str, skill_code: str):
         className="single-skill-summary-block",
     )
 
-# Tab 3 - Frame 3 - Single Skill Histogram:
+# -----------------------------------------------------------------------------
+# Tab 3, Frame 3 — Skill Ranking Distribution helpers
+# -----------------------------------------------------------------------------
 
-_HIST_RE = re.compile(r"^rating_hist_(\d+)$")
+T3_F3_HIST_RE = re.compile(r"^rating_hist_(\d+)$")
 
-def _tab3_skill_col(df: pd.DataFrame) -> str:
+def t3_f3_get_skill_col(df: pd.DataFrame) -> str:
     if "sk_name" in df.columns:
         return "sk_name"
     if "skill_code" in df.columns:
         return "skill_code"
     raise KeyError("[tab3_hist] missing skill id column (expected sk_name or skill_code)")
 
-def _tab3_hist_cols(df: pd.DataFrame):
+def t3_f3_get_hist_cols(df: pd.DataFrame):
     cols = []
     for c in df.columns:
-        m = _HIST_RE.match(str(c))
+        m = T3_F3_HIST_RE.match(str(c))
         if m:
             cols.append((int(m.group(1)), c))
     cols.sort(key=lambda t: t[0])
     return cols  # list of (bin_int, colname)
 
-def _extract_xy_rating(row: pd.Series, hist_cols):
+def t3_f3_extract_rating_xy(row: pd.Series, hist_cols):
     # hist_cols is list of (bin_int, colname)
     xs = [float(b) for b, _ in hist_cols]
     ys = []
@@ -2691,7 +2778,7 @@ def _extract_xy_rating(row: pd.Series, hist_cols):
         ys.append(float(v))
     return xs, ys
 
-def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill: str):
+def t3_f3_build_ranking_distribution(skill_df: pd.DataFrame, selected_skill: str):
     fig = go.Figure()
 
     # --- Guards ---
@@ -2710,10 +2797,10 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
         )
         return fig
 
-    sk_col = _tab3_skill_col(skill_df)
+    sk_col = t3_f3_get_skill_col(skill_df)
 
     # --- Histogram columns (auto-detect) ---
-    hist_cols = _tab3_hist_cols(skill_df)
+    hist_cols = t3_f3_get_hist_cols(skill_df)
     if not hist_cols:
         fig.update_layout(
             title="Skill Ranking Distribution",
@@ -2756,7 +2843,7 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
     tier1_df = tier1_df.loc[tier1_df[sk_col].astype(str).str.strip() != s].head(4)
 
     # --- Add selected trace (SOLID) ---
-    xs, ys = _extract_xy_rating(sel_row, hist_cols)
+    xs, ys = t3_f3_extract_rating_xy(sel_row, hist_cols)
     fig.add_trace(
         go.Scatter(
             x=xs, y=ys,
@@ -2769,7 +2856,7 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
     # --- Add Tier 1 traces (FAINT DOTTED) ---
     for _, r in tier1_df.iterrows():
         sc = str(r[sk_col]).strip()
-        xs2, ys2 = _extract_xy_rating(r, hist_cols)
+        xs2, ys2 = t3_f3_extract_rating_xy(r, hist_cols)
         fig.add_trace(
             go.Scatter(
                 x=xs2, y=ys2,
@@ -2786,7 +2873,7 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
     y_max_raw = max(y_max_raw, max(ys) if ys else 0.0)
 
     for _, r in tier1_df.iterrows():
-        _, ys2 = _extract_xy_rating(r, hist_cols)
+        _, ys2 = t3_f3_extract_rating_xy(r, hist_cols)
         if ys2:
             y_max_raw = max(y_max_raw, max(ys2))
 
@@ -2871,7 +2958,7 @@ def build_tab3_skill_ranking_distribution(skill_df: pd.DataFrame, selected_skill
 
     return fig
 
-def tab4_split_codes(blob: str, n_skills: int) -> list[str]:
+def t4_split_codes(blob: str, n_skills: int) -> list[str]:
     """
     Split a 3/6/12-char skill blob into 3-letter codes.
     Example:
@@ -2894,27 +2981,27 @@ def tab4_split_codes(blob: str, n_skills: int) -> list[str]:
 
 # ===== TAB4:  Class Summaries and Example Builds ======
 
-def tab4_skill_icon_img(skill_code: str, size_px: int = 28):
+def t4_build_skill_icon(skill_code: str, size_px: int = 28):
     return html.Img(
         src=f"/assets/skill_icons/{skill_code}.png",
-        title=strip_parens(get_full_skill_name(skill_code)),
+        title=glob_strip_parens(glob_get_full_skill_name(skill_code)),
         style={"height": f"{size_px}px", "width": f"{size_px}px"},
     )
 
-def tab4_row_colors(class_code: str):
+def t4_get_row_colors(class_code: str):
     """
     GT = green, BT = blue, RT = red
     """
     c = str(class_code).strip().upper()
     if c.startswith("G"):
-        return TAB4_ROW_BG_GREEN, TAB4_ROW_BG_GREEN_CLASS
+        return T4ROW_BG_GREEN, T4ROW_BG_GREEN_CLASS
     if c.startswith("B"):
-        return TAB4_ROW_BG_BLUE, TAB4_ROW_BG_BLUE_CLASS
+        return T4ROW_BG_BLUE, T4ROW_BG_BLUE_CLASS
     if c.startswith("R"):
-        return TAB4_ROW_BG_RED, TAB4_ROW_BG_RED_CLASS
+        return T4ROW_BG_RED, T4ROW_BG_RED_CLASS
     return "white", "#eeeeee"
 
-def tab4_skill_button(class_code: str, skill_code: str):
+def t4_build_skill_button(class_code: str, skill_code: str):
     if not skill_code:
         return "—"
 
@@ -2922,71 +3009,71 @@ def tab4_skill_button(class_code: str, skill_code: str):
         [
             html.Div(
                 [
-                    tab4_skill_icon_img(skill_code, size_px=30),
+                    t4_build_skill_icon(skill_code, size_px=30),
                     html.Span(skill_code, style={"fontSize": "12px", "fontWeight": "600"}),
                 ],
-                style=TAB4_ICON_ROW_STYLE,
+                style=T4ICON_ROW_STYLE,
             ),
         ],
         id={
-            "type": "tab4-key-skill-btn",
+            "type": "t4-key-skill-btn",
             "class_code": class_code,
             "skill": skill_code,
         },
         n_clicks=0,
-        title=skill_label(skill_code),
-        style=TAB4_LINK_BUTTON_STYLE,
+        title=glob_skill_label(skill_code),
+        style=T4LINK_BUTTON_STYLE,
     )
     
-def tab4_core_button(class_code: str, core_blob: str):
-    codes = tab4_split_codes(core_blob, 2)
+def t4_build_core_button(class_code: str, core_blob: str):
+    codes = t4_split_codes(core_blob, 2)
     if len(codes) != 2:
         return "—"
 
     parts = []
     for c in codes:
-        parts.append(tab4_skill_icon_img(c, size_px=26))
+        parts.append(t4_build_skill_icon(c, size_px=26))
         parts.append(html.Span(c, style={"fontSize": "12px", "fontWeight": "600"}))
 
     return html.Button(
         [
-            html.Div(parts, style=TAB4_ICON_ROW_STYLE),
+            html.Div(parts, style=T4ICON_ROW_STYLE),
         ],
         id={
-            "type": "tab4-core-btn",
+            "type": "t4-core-btn",
             "class_code": class_code,
             "core": core_blob,
         },
         n_clicks=0,
-        title=" / ".join([skill_label(c) for c in codes]),
-        style=TAB4_LINK_BUTTON_STYLE,
+        title=" / ".join([glob_skill_label(c) for c in codes]),
+        style=T4LINK_BUTTON_STYLE,
     )
 
-def tab4_build_button(class_code: str, build_blob: str):
-    codes = tab4_split_codes(build_blob, 4)
+def t4_build_example_button(class_code: str, build_blob: str):
+    codes = t4_split_codes(build_blob, 4)
     if len(codes) != 4:
         return "—"
 
     parts = []
     for c in codes:
-        parts.append(tab4_skill_icon_img(c, size_px=22))
+        parts.append(t4_build_skill_icon(c, size_px=22))
         parts.append(html.Span(c, style={"fontSize": "11px", "fontWeight": "600"}))
 
     return html.Button(
         [
-            html.Div(parts, style=TAB4_ICON_ROW_STYLE),
+            html.Div(parts, style=T4ICON_ROW_STYLE),
         ],
         id={
-            "type": "tab4-build-btn",
+            "type": "t4-build-btn",
             "class_code": class_code,
             "build": build_blob,
         },
         n_clicks=0,
-        title=" / ".join([skill_label(c) for c in codes]),
-        style=TAB4_LINK_BUTTON_STYLE,
+        title=" / ".join([glob_skill_label(c) for c in codes]),
+        style=T4LINK_BUTTON_STYLE,
     )
 
-def tab4_class_label_cell(class_code: str, class_name: str):
+def t4_build_class_label_cell(class_code: str, class_name: str):
     return html.Div(
         [
             html.Img(
@@ -2996,10 +3083,10 @@ def tab4_class_label_cell(class_code: str, class_name: str):
             ),
             html.Span(class_name),
         ],
-        style=TAB4_CLASS_LINE_STYLE,
+        style=T4CLASS_LINE_STYLE,
     )
 
-def tab4_fmt_rating(v):
+def t4_format_rating(v):
     if v is None or pd.isna(v):
         return "—"
     try:
@@ -3008,7 +3095,7 @@ def tab4_fmt_rating(v):
         return str(v)
 
 
-def tab4_class_summary_table(sort_mode: str = "class_asc"):
+def t4_build_class_summary_table(sort_mode: str = "class_asc"):
     """
     Build the desktop class-summary table from db_hero_codes.csv.
     """
@@ -3055,42 +3142,42 @@ def tab4_class_summary_table(sort_mode: str = "class_asc"):
         class_code = row["Code"]
         class_name = row["Hero_Class"]
 
-        row_bg, class_bg = tab4_row_colors(class_code)
+        row_bg, class_bg = t4_get_row_colors(class_code)
 
         rows.append(
             html.Tr(
                 [
                     html.Td(
-                        tab4_class_label_cell(class_code, class_name),
-                        style={**TAB4_CLASS_CELL_STYLE, "backgroundColor": class_bg},
+                        t4_build_class_label_cell(class_code, class_name),
+                        style={**T4CLASS_CELL_STYLE, "backgroundColor": class_bg},
                     ),
                     html.Td(
-                        tab4_fmt_rating(row.get("rating_max")),
-                        style={**TAB4_MAX_CELL_STYLE, "backgroundColor": row_bg},
+                        t4_format_rating(row.get("rating_max")),
+                        style={**T4MAX_CELL_STYLE, "backgroundColor": row_bg},
                     ),
                     html.Td(
-                        tab4_skill_button(class_code, row.get("key_skill")),
-                        style={**TAB4_TD_STYLE, "backgroundColor": row_bg},
+                        t4_build_skill_button(class_code, row.get("key_skill")),
+                        style={**T4TD_STYLE, "backgroundColor": row_bg},
                     ),
                     html.Td(
-                        tab4_core_button(class_code, row.get("ex_core1")),
-                        style={**TAB4_TD_STYLE, "backgroundColor": row_bg},
+                        t4_build_core_button(class_code, row.get("ex_core1")),
+                        style={**T4TD_STYLE, "backgroundColor": row_bg},
                     ),
                     html.Td(
-                        tab4_core_button(class_code, row.get("ex_core2")),
-                        style={**TAB4_TD_STYLE, "backgroundColor": row_bg},
+                        t4_build_core_button(class_code, row.get("ex_core2")),
+                        style={**T4TD_STYLE, "backgroundColor": row_bg},
                     ),
                     html.Td(
-                        tab4_build_button(class_code, row.get("build_apex")),
-                        style={**TAB4_TD_STYLE, "backgroundColor": row_bg},
+                        t4_build_example_button(class_code, row.get("build_apex")),
+                        style={**T4TD_STYLE, "backgroundColor": row_bg},
                     ),
                     html.Td(
-                        tab4_build_button(class_code, row.get("build_ex1")),
-                        style={**TAB4_TD_STYLE, "backgroundColor": row_bg},
+                        t4_build_example_button(class_code, row.get("build_ex1")),
+                        style={**T4TD_STYLE, "backgroundColor": row_bg},
                     ),
                     html.Td(
-                        tab4_build_button(class_code, row.get("build_ex2")),
-                        style={**TAB4_TD_STYLE, "backgroundColor": row_bg},
+                        t4_build_example_button(class_code, row.get("build_ex2")),
+                        style={**T4TD_STYLE, "backgroundColor": row_bg},
                     ),
                 ]
             )
@@ -3101,23 +3188,23 @@ def tab4_class_summary_table(sort_mode: str = "class_asc"):
             html.Thead(
                 html.Tr(
                     [
-                        html.Th("Class", style=TAB4_TH_STYLE_CLASS),
-                        html.Th("Max Rating", style=TAB4_TH_STYLE_CLASS),
-                        html.Th("Key Skill", style=TAB4_TH_STYLE_KEY),
-                        html.Th("Example Core 1", style=TAB4_TH_STYLE_CORE),
-                        html.Th("Example Core 2", style=TAB4_TH_STYLE_CORE),
-                        html.Th("APEX Build", style=TAB4_TH_STYLE_BUILD),
-                        html.Th("Example Build 1", style=TAB4_TH_STYLE_BUILD),
-                        html.Th("Example Build 2", style=TAB4_TH_STYLE_BUILD),
+                        html.Th("Class", style=T4TH_STYLE_CLASS),
+                        html.Th("Max Rating", style=T4TH_STYLE_CLASS),
+                        html.Th("Key Skill", style=T4TH_STYLE_KEY),
+                        html.Th("Example Core 1", style=T4TH_STYLE_CORE),
+                        html.Th("Example Core 2", style=T4TH_STYLE_CORE),
+                        html.Th("APEX Build", style=T4TH_STYLE_BUILD),
+                        html.Th("Example Build 1", style=T4TH_STYLE_BUILD),
+                        html.Th("Example Build 2", style=T4TH_STYLE_BUILD),
                     ]
                 )
             ),
             html.Tbody(rows),
         ],
-        style=TAB4_TABLE_STYLE,
+        style=T4TABLE_STYLE,
     )
     
-def tab5_load_markdown() -> str:
+def t5_load_markdown() -> str:
     try:
         return TAB5_MD_PATH.read_text(encoding="utf-8")
     except Exception as e:
@@ -3127,12 +3214,12 @@ def tab5_load_markdown() -> str:
             f"_Error: {type(e).__name__}: {e}_"
         )
 
-def tab5_header():
+def t5_build_header():
     return html.H4("Using This Tool", style=TITLE_BANNER_STYLE)
 
-def tab5_body_markdown():
+def t5_build_body_markdown():
     return dcc.Markdown(
-        tab5_load_markdown(),
+        t5_load_markdown(),
         style={
             "background": "white",
             "color": "black",
@@ -3417,7 +3504,16 @@ app.title = "Skills UI — Shop Titans Skills Ratings - PoC"
 def _is_available(val):
     return str(val).strip().lower() in ("true", "yes", "1", "y")
 
-def make_layout_tab1():
+# =============================================================================
+# 07 TAB 1 BUILDERS — 2-Skill Explorer
+# =============================================================================
+# Tab 1 contains:
+#   Frame 1: class + two core-skill selectors
+#   Frame 2: ranked 3rd/4th-skill option table
+#   Frame 3: 3rd/4th-skill heatmap
+# =============================================================================
+
+def t1_build_layout():
     return html.Div(
         style={
             "margin": "10px 40px 10px 10px",
@@ -3696,7 +3792,7 @@ def make_layout_tab1():
     )
 
 
-def make_layout_tab2():
+def t2_build_layout():
     return html.Div(
         style={
             "margin": "10px 40px 10px 10px",
@@ -3963,7 +4059,7 @@ def make_layout_tab2():
 
 # ========== Tab 3: Single Skill Info layout ==========
 
-def make_layout_tab3():
+def t3_build_layout():
     return html.Div(
         style={
             "margin": "10px 40px 10px 10px",
@@ -4090,9 +4186,14 @@ def make_layout_tab3():
         ],
     )
 
-# ===== TAB4:  Summary of all Classes and example builds/cores
+# =============================================================================
+# 10 TAB 4 BUILDERS — Class Summary
+# =============================================================================
+# Tab 4 provides a class-level comparison table with clickable key skills,
+# example cores, and example full builds.
+# =============================================================================
 
-def make_layout_tab4():
+def t4_build_layout():
     return html.Div(
         style={
             "margin": "10px 20px 10px 10px",
@@ -4100,7 +4201,7 @@ def make_layout_tab4():
             "fontFamily": "Arial",
             "backgroundColor": APP_BG,
         },
-        id="tab4-class-summary-tab",
+        id="t4-class-summary-tab",
         children=[
             html.H4("Class Summary", style=TITLE_BANNER_STYLE),
             html.Div(
@@ -4122,7 +4223,7 @@ def make_layout_tab4():
                     html.Span("Sort Order:", style={"fontWeight": "bold", "marginRight": "8px"}),
                     html.Button(
                         "By Class & Tier",
-                        id="tab4-sort-class-tier-btn",
+                        id="t4-sort-class-tier-btn",
                         n_clicks=0,
                         style={
                             "padding": "6px 10px",
@@ -4135,7 +4236,7 @@ def make_layout_tab4():
                     ),
                     html.Button(
                         "By Rating",
-                        id="tab4-sort-rating-btn",
+                        id="t4-sort-rating-btn",
                         n_clicks=0,
                         style={
                             "padding": "6px 10px",
@@ -4147,7 +4248,7 @@ def make_layout_tab4():
                     ),
                     html.Button(
                         "By Class (Alpha)",
-                        id="tab4-sort-class-alpha-btn",
+                        id="t4-sort-class-alpha-btn",
                         n_clicks=0,
                         style={
                             "padding": "6px 10px",
@@ -4157,7 +4258,7 @@ def make_layout_tab4():
                             "cursor": "pointer",
                         },
                     ),
-                    dcc.Store(id="tab4-sort-mode", data="class_tier"),
+                    dcc.Store(id="t4-sort-mode", data="class_tier"),
                 ],
                 style={
                     "display": "flex",
@@ -4168,7 +4269,7 @@ def make_layout_tab4():
                 },
             ),
             html.Div(
-                id="tab4-table-wrap",
+                id="t4-table-wrap",
                 style={
                     "overflowX": "auto",
                 },
@@ -4183,7 +4284,7 @@ def make_layout_tab4():
     
 # ===== TAB5:  User Instructions & FAQ
     
-def make_layout_tab5():
+def t5_build_layout():
     return html.Div(
         style={
             "margin": "10px 40px 10px 10px",
@@ -4192,12 +4293,12 @@ def make_layout_tab5():
         },
         id="using-this-tool-tab",
         children=[
-            tab5_header(),
+            t5_build_header(),
             html.Div(
                 [
                     # Optional: if you later add images to assets, they can live above/between sections
                     # html.Img(src="/assets/help_flow.png", style={"maxWidth": "980px", "width": "100%", "marginBottom": "10px"}),
-                    tab5_body_markdown(),
+                    t5_build_body_markdown(),
                 ],
                 style={
                     "display": "flex", 
@@ -4209,7 +4310,9 @@ def make_layout_tab5():
     )
 
     
-# ========== Overall App Layout ==========
+# =============================================================================
+# 12 APP LAYOUT
+# =============================================================================
 
 app.layout = html.Div(
     style={"backgroundColor": APP_BG, "minHeight": "100vh"},
@@ -4224,34 +4327,36 @@ app.layout = html.Div(
                 dcc.Tab(
                     label="2-Skill Explorer",
                     value="tab-2skill",
-                    children=make_layout_tab1(),   # existing UI
+                    children=t1_build_layout(),
                 ),
                 dcc.Tab(
                     label="Skill Combo Detail",
                     value="tab-combo-detail",
-                    children=make_layout_tab2()
+                    children=t2_build_layout()
                 ),
                 dcc.Tab(
                     label="Single Skill Info",
                     value="tab-single-skill",
-                    children=make_layout_tab3(),
+                    children=t3_build_layout(),
                 ),
                 dcc.Tab(
                     label="Class Summary",
                     value="tab-class-summary",
-                    children=make_layout_tab4(),
+                    children=t4_build_layout(),
                 ),
                 dcc.Tab(
                     label="Help: Using this Tool",
                     value="using-this-tool-tab",
-                    children=make_layout_tab5(),
+                    children=t5_build_layout(),
                 ),
             ],
         )
     ]
 )
 
-# ---------- CALLBACKS ----------
+# =============================================================================
+# 13 CALLBACKS
+# =============================================================================
 
 # 1) Dropdowns for Skill 1 / Skill 2
 @app.callback(
@@ -4263,7 +4368,7 @@ app.layout = html.Div(
     Input("skill1", "value"),
     Input("skill2", "value"),
 )
-def update_skill_dropdowns(class_code, s1, s2):
+def t1_f2_cb_update_skill_dropdowns(class_code, s1, s2):
     """
     Populate Skill 1 & Skill 2 dropdowns for the 2-skill explorer,
     honoring incompatibilities and always sorting options alphabetically.
@@ -4271,13 +4376,13 @@ def update_skill_dropdowns(class_code, s1, s2):
     if not class_code:
         return [], [], None, None
 
-    base_skills = get_base_skills_for_class(class_code)
+    base_skills = glob_get_base_skills_for_class(class_code)
     if not base_skills:
         return [], [], None, None
 
     # --- initial pools, sorted ---
-    pool1 = sorted(filtered_skill_pool(base_skills, [s2] if s2 else []))
-    pool2 = sorted(filtered_skill_pool(base_skills, [s1] if s1 else []))
+    pool1 = sorted(glob_filtered_skill_pool(base_skills, [s2] if s2 else []))
+    pool2 = sorted(glob_filtered_skill_pool(base_skills, [s1] if s1 else []))
 
     # --- validate current selections ---
     if s1 not in pool1:
@@ -4288,11 +4393,11 @@ def update_skill_dropdowns(class_code, s1, s2):
         s2 = defaults2[0] if defaults2 else (pool2[0] if pool2 else None)
 
     # --- rebuild pools in case s1/s2 changed, and sort again ---
-    pool1 = sorted(filtered_skill_pool(base_skills, [s2] if s2 else []))
-    pool2 = sorted(filtered_skill_pool(base_skills, [s1] if s1 else []))
+    pool1 = sorted(glob_filtered_skill_pool(base_skills, [s2] if s2 else []))
+    pool2 = sorted(glob_filtered_skill_pool(base_skills, [s1] if s1 else []))
 
-    opts1 = [{"label": skill_label(s), "value": s} for s in pool1]
-    opts2 = [{"label": skill_label(s), "value": s} for s in pool2]
+    opts1 = [{"label": glob_skill_label(s), "value": s} for s in pool1]
+    opts2 = [{"label": glob_skill_label(s), "value": s} for s in pool2]
 
     return opts1, opts2, s1, s2
 
@@ -4300,12 +4405,12 @@ def update_skill_dropdowns(class_code, s1, s2):
     Output("heatmap-exclude-skills", "options"),
     Input("hero-class", "value"),
 )
-def update_exclude_options(class_code):
+def t1_f3_cb_update_exclude_options(class_code):
     if not class_code:
         return []
 
-    base_skills = get_base_skills_for_class(class_code)
-    return [{"label": skill_label(s), "value": s} for s in sorted(base_skills)]
+    base_skills = glob_get_base_skills_for_class(class_code)
+    return [{"label": glob_skill_label(s), "value": s} for s in sorted(base_skills)]
 
 @app.callback(
     Output("step3-title", "children"),
@@ -4320,12 +4425,12 @@ def update_exclude_options(class_code):
     Input("heatmap-exclude-skills", "value"),
     prevent_initial_call="initial_duplicate",
 )
-def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
+def t1_cb_update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     empty_fig = go.Figure()
 
     def build_titles():
-        full1 = strip_parens(get_full_skill_name(skill1))
-        full2 = strip_parens(get_full_skill_name(skill2))
+        full1 = glob_strip_parens(glob_get_full_skill_name(skill1))
+        full2 = glob_strip_parens(glob_get_full_skill_name(skill2))
 
         title3 = [
             "3rd & 4th Skill Options for ",
@@ -4349,14 +4454,14 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
         msg = "Pick a hero class plus two different core skills."
         return step3_title, heatmap_title, msg, [], empty_fig
 
-    bundle = get_class_bundle(class_code)
+    bundle = glob_get_class_bundle(class_code)
     if bundle is None:
         step3_title, heatmap_title = build_titles()
         msg = f"No data available for class {class_code}."
         return step3_title, heatmap_title, msg, [], empty_fig
 
-    rows1 = get_skill_rows_for_class(bundle, skill1)
-    rows2 = get_skill_rows_for_class(bundle, skill2)
+    rows1 = glob_get_skill_rows_for_class(bundle, skill1)
+    rows2 = glob_get_skill_rows_for_class(bundle, skill2)
     idx = np.intersect1d(rows1, rows2, assume_unique=True)
 
     step3_title, heatmap_title = build_titles()
@@ -4367,7 +4472,7 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
 
     records = []
     for i in idx:
-        skills = get_skill_codes_for_row(bundle, int(i))
+        skills = glob_get_skill_codes_for_row(bundle, int(i))
         others = [s for s in skills if s not in (skill1, skill2)]
         if len(others) != 2:
             continue
@@ -4379,7 +4484,7 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
             "s3": s3_code,
             "s4": s4_code,
             "raw_rating": raw_rating,
-            "net_rating": net_rating_display(bundle["net_rating"][i]),
+            "net_rating": glob_net_rating_display(bundle["net_rating"][i]),
         })
 
     if not records:
@@ -4388,8 +4493,8 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
 
     table_df = pd.DataFrame(records).sort_values("raw_rating", ascending=False).reset_index(drop=True)
     table_df["rank"] = range(1, len(table_df) + 1)
-    table_df["s3_full"] = table_df["s3"].map(get_full_skill_name).fillna(table_df["s3"])
-    table_df["s4_full"] = table_df["s4"].map(get_full_skill_name).fillna(table_df["s4"])
+    table_df["s3_full"] = table_df["s3"].map(glob_get_full_skill_name).fillna(table_df["s3"])
+    table_df["s4_full"] = table_df["s4"].map(glob_get_full_skill_name).fillna(table_df["s4"])
 
     lookup = {}
     for _, row in table_df.iterrows():
@@ -4398,7 +4503,7 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
 
     skills_present = set(table_df["s3"]) | set(table_df["s4"])
 
-    df_assess = get_single_skill_assess_df(class_code)
+    df_assess = glob_get_single_skill_assess_df(class_code)
     axis_skills = build_skill_order_from_assess(df_assess, sorted(list(skills_present)))
 
     filter_mode = (skill_filter or "all").lower()
@@ -4455,10 +4560,10 @@ def update_outputs(class_code, skill1, skill2, skill_filter, exclude_skills):
     ].copy()
 
     table_df_ui["s3_mobile"] = table_df_ui["s3"].map(
-        lambda x: strip_parens(get_full_skill_name(x))
+        lambda x: glob_strip_parens(glob_get_full_skill_name(x))
     )
     table_df_ui["s4_mobile"] = table_df_ui["s4"].map(
-        lambda x: strip_parens(get_full_skill_name(x))
+        lambda x: glob_strip_parens(glob_get_full_skill_name(x))
     )
 
     table_df_ui["raw_rating"] = table_df_ui["raw_rating"].map(
@@ -4683,8 +4788,6 @@ def drive_detail_selection(
     s1,
     s2,
 ):
-    from dash import callback_context, no_update
-
     try:
         ctx = callback_context
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
@@ -4718,7 +4821,7 @@ def drive_detail_selection(
             s4_2 = extra[1] if len(extra) > 1 else None
 
             if not (class_code2 and s1_2 and s2_2 and s3_2 and s4_2):
-                return no_update, no_update, no_update, no_update, no_update
+                return no_update, no_update, no_update, no_update, no_update, no_update
 
             return {"tab": "tab-combo-detail"}, class_code2, s1_2, s2_2, s3_2, s4_2
 
@@ -4739,7 +4842,7 @@ def drive_detail_selection(
     prevent_initial_call=True,
 )
 
-def on_heatmap_click(clickData, class_code, s1, s2):
+def t1_f3_cb_store_heatmap_click(clickData, class_code, s1, s2):
     """Store a 4-skill combo when the user clicks a heatmap cell."""
     # Nothing clicked yet
     if not clickData:
@@ -4807,7 +4910,7 @@ def route_tabs_and_single_skill(
     d_s2_btn_clicks,
     d_s3_btn_clicks,
     d_s4_btn_clicks,
-    detail_icon_clicks,
+    glob_detail_icon_clicks,
     current_tab,
     hero_class,
     skill1_code,
@@ -4939,7 +5042,7 @@ def route_tabs_and_single_skill(
     # ------------------------------------------------------------
     if trigger_id_str == "main-tabs" and trigger_val == "tab-single-skill":
         target_class = detail_class or hero_class or "G2"
-        base = get_base_skills_for_class(target_class)
+        base = glob_get_base_skills_for_class(target_class)
         default_skill = sorted(base)[0] if base else None
         return {"tab": "tab-single-skill"}, target_class, default_skill
 
@@ -4973,7 +5076,7 @@ def route_tabs_and_single_skill(
     State("main-tabs", "value"),
     prevent_initial_call=True,
 )
-def apply_pending_tab_nav(nav_data, current_tab):
+def app_cb_apply_pending_tab_nav(nav_data, current_tab):
 
     if not nav_data:
         return no_update
@@ -4994,7 +5097,7 @@ def apply_pending_tab_nav(nav_data, current_tab):
     Input("skill1", "value"),
     Input("skill2", "value"),
 )
-def update_skill_icons(s1, s2):
+def t1_f1_cb_update_skill_icons(s1, s2):
     def path(code):
         if not code:
             return no_update
@@ -5006,7 +5109,7 @@ def update_skill_icons(s1, s2):
     Output("hero-class-icon", "src"),
     Input("hero-class", "value"),
 )   
-def update_class_icon(class_code):
+def t1_f1_cb_update_class_icon(class_code):
     if not class_code:
         return no_update
     # expects icons like assets/hero_classes/G2.png, G3.png, etc.
@@ -5048,7 +5151,7 @@ def update_detail_skill_options(class_code, s1, s2, s3, s4):
     if not class_code:
         return [], [], [], [], None, None, None, None
 
-    base_skills = get_base_skills_for_class(class_code)
+    base_skills = glob_get_base_skills_for_class(class_code)
     if not base_skills:
         return [], [], [], [], None, None, None, None
 
@@ -5061,7 +5164,7 @@ def update_detail_skill_options(class_code, s1, s2, s3, s4):
         fixed_others = [s for i, s in enumerate(selected) if i != idx and s]
 
         # apply normal filtering
-        pool = filtered_skill_pool(base_skills, fixed_others)
+        pool = glob_filtered_skill_pool(base_skills, fixed_others)
 
         # remove duplicates already selected elsewhere
         used_elsewhere = set(fixed_others)
@@ -5073,7 +5176,7 @@ def update_detail_skill_options(class_code, s1, s2, s3, s4):
 
         pool = sorted(set(pool))
 
-        opts = [{"label": skill_label(s), "value": s} for s in pool]
+        opts = [{"label": glob_skill_label(s), "value": s} for s in pool]
         options_out.append(opts)
 
         if current_val in pool:
@@ -5139,7 +5242,7 @@ def update_reroll_target_options(class_code, s1, s2, s3, s4, reroll_slot, curren
     selected_skills = [s1, s2, s3, s4]
     valid_targets = get_valid_reroll_targets(class_code, selected_skills, int(reroll_slot))
 
-    opts = [{"label": skill_label(sc), "value": sc} for sc in valid_targets]
+    opts = [{"label": glob_skill_label(sc), "value": sc} for sc in valid_targets]
 
     current_targets = current_targets or []
     kept = [sc for sc in current_targets if sc in valid_targets][:3]
@@ -5188,17 +5291,17 @@ def show_combo_detail(class_code, s1, s2, s3, s4):
     if not class_code or not s1 or not s2 or not s3 or not s4:
         return "Select a hero and four skills to see details."
 
-    bundle = get_class_bundle(class_code)
+    bundle = glob_get_class_bundle(class_code)
     if bundle is None:
         return f"No all-data found for class {class_code}."
 
-    row_idx = find_combo_index(bundle, class_code, [s1, s2, s3, s4])
+    row_idx = glob_find_combo_index(bundle, class_code, [s1, s2, s3, s4])
     if row_idx is None:
-        skill_code = canonical_full_skill_code(class_code, [s1, s2, s3, s4])
+        skill_code = glob_canonical_full_skill_code(class_code, [s1, s2, s3, s4])
         return f"No matching row in numeric bundle for skill_code={skill_code}"
         
-    row = build_combo_row(bundle, class_code, row_idx)
-    return build_tab2_frame2_section1(row, class_meta, skill_lookup)
+    row = glob_build_combo_row(bundle, class_code, row_idx)
+    return t2_f2_build_detail_section(row, class_meta, skill_lookup)
     
 # ---------- Tab2, Frame3: DETAIL HISTOGRAM CALLBACK ----------
 
@@ -5212,11 +5315,9 @@ def show_combo_detail(class_code, s1, s2, s3, s4):
 )
 def update_detail_rating_percentile_histogram(class_code, s1, s2, s3, s4):
     hero_codes_df = pd.read_csv(DATA_DIR / "db_hero_codes.csv")
-    return build_tab2_f3_rating_percentile_histogram(hero_codes_df, class_code, s1, s2, s3, s4)
+    return t2_f3_build_rating_percentile_histogram(hero_codes_df, class_code, s1, s2, s3, s4)
 
-from dash import callback, Output, Input, State, no_update
-
-@callback(
+@app.callback(
     Output("single-skill-select", "options"),
     Input("single-skill-class", "value"),
 )
@@ -5224,11 +5325,11 @@ def update_single_skill_dropdown_options(class_code):
     if not class_code:
         return []
 
-    base = get_base_skills_for_class(class_code)  # your existing helper
+    base = glob_get_base_skills_for_class(class_code)  # your existing helper
     # options sorted alphabetically by code (matches your preference)
     base = sorted(set(base))
 
-    return [{"label": skill_label(s), "value": s} for s in base]
+    return [{"label": glob_skill_label(s), "value": s} for s in base]
 
 
 @app.callback(
@@ -5257,7 +5358,7 @@ def update_single_skill_icon(sc):
 def update_single_skill_summary(class_code, skill_code):
     if not class_code or not skill_code:
         return "Select a class and a skill to see details."
-    return build_single_skill_summary_block(class_code, skill_code)
+    return t3_f2_build_summary_block(class_code, skill_code)
 
 @app.callback(
     Output("tab3-frame3-title", "children"),
@@ -5269,7 +5370,7 @@ def update_tab3_frame3_title(class_code, skill_code):
         return "Skill Ranking Distribution"
 
     class_name = class_meta.get(class_code, {}).get("name", class_code)
-    skill_name = strip_parens(get_full_skill_name(skill_code))
+    skill_name = glob_strip_parens(glob_get_full_skill_name(skill_code))
 
     return [
         "Skill Ranking Distribution:",
@@ -5283,8 +5384,8 @@ def update_tab3_frame3_title(class_code, skill_code):
     Input("single-skill-select", "value"),
 )
 def update_tab3_histogram(class_code, selected_skill):
-    skill_df = get_single_skill_assess_df(class_code)
-    return build_tab3_skill_ranking_distribution(skill_df, selected_skill)
+    skill_df = glob_get_single_skill_assess_df(class_code)
+    return t3_f3_build_ranking_distribution(skill_df, selected_skill)
 
 @app.callback(
     Output("pending-tab-nav", "data", allow_duplicate=True),
@@ -5302,13 +5403,13 @@ def update_tab3_histogram(class_code, selected_skill):
     Output("single-skill-class", "value", allow_duplicate=True),
     Output("single-skill-select", "value", allow_duplicate=True),
 
-    Input({"type": "tab4-key-skill-btn", "class_code": ALL, "skill": ALL}, "n_clicks"),
-    Input({"type": "tab4-core-btn", "class_code": ALL, "core": ALL}, "n_clicks"),
-    Input({"type": "tab4-build-btn", "class_code": ALL, "build": ALL}, "n_clicks"),
+    Input({"type": "t4-key-skill-btn", "class_code": ALL, "skill": ALL}, "n_clicks"),
+    Input({"type": "t4-core-btn", "class_code": ALL, "core": ALL}, "n_clicks"),
+    Input({"type": "t4-build-btn", "class_code": ALL, "build": ALL}, "n_clicks"),
 
     prevent_initial_call=True,
 )
-def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
+def t4_route_clicks(key_clicks, core_clicks, build_clicks):
     ctx = callback_context
     if not ctx.triggered:
         return (
@@ -5362,7 +5463,7 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
     class_code = comp_id.get("class_code")
 
     # --- Key Skill -> Tab 3 ---
-    if typ == "tab4-key-skill-btn":
+    if typ == "t4-key-skill-btn":
         skill_code = comp_id.get("skill")
         return (
             {"tab": "tab-single-skill"},
@@ -5372,9 +5473,9 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
         )
 
     # --- Example Core -> Tab 1 ---
-    if typ == "tab4-core-btn":
+    if typ == "t4-core-btn":
         core_blob = comp_id.get("core")
-        codes = tab4_split_codes(core_blob, 2)
+        codes = t4_split_codes(core_blob, 2)
         if len(codes) != 2:
             return (
                 no_update,
@@ -5391,9 +5492,9 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
         )
 
     # --- Example Build -> Tab 2 ---
-    if typ == "tab4-build-btn":
+    if typ == "t4-build-btn":
         build_blob = comp_id.get("build")
-        codes = tab4_split_codes(build_blob, 4)
+        codes = t4_split_codes(build_blob, 4)
         if len(codes) != 4:
             return (
                 no_update,
@@ -5417,13 +5518,13 @@ def tab4_route_clicks(key_clicks, core_clicks, build_clicks):
     )
     
 @app.callback(
-    Output("tab4-sort-mode", "data"),
-    Input("tab4-sort-class-tier-btn", "n_clicks"),
-    Input("tab4-sort-rating-btn", "n_clicks"),
-    Input("tab4-sort-class-alpha-btn", "n_clicks"),
+    Output("t4-sort-mode", "data"),
+    Input("t4-sort-class-tier-btn", "n_clicks"),
+    Input("t4-sort-rating-btn", "n_clicks"),
+    Input("t4-sort-class-alpha-btn", "n_clicks"),
     prevent_initial_call=False,
 )
-def tab4_set_sort_mode(n_class_tier, n_rating, n_class_alpha):
+def t4_set_sort_mode(n_class_tier, n_rating, n_class_alpha):
     ctx = callback_context
 
     if not ctx.triggered:
@@ -5431,20 +5532,20 @@ def tab4_set_sort_mode(n_class_tier, n_rating, n_class_alpha):
 
     trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
-    if trigger_id == "tab4-sort-rating-btn":
+    if trigger_id == "t4-sort-rating-btn":
         return "rating_desc"
-    if trigger_id == "tab4-sort-class-alpha-btn":
+    if trigger_id == "t4-sort-class-alpha-btn":
         return "class_alpha"
 
     return "class_tier"
     
 
 @app.callback(
-    Output("tab4-table-wrap", "children"),
-    Input("tab4-sort-mode", "data"),
+    Output("t4-table-wrap", "children"),
+    Input("t4-sort-mode", "data"),
 )
-def tab4_update_table(sort_mode):
-    return tab4_class_summary_table(sort_mode)
+def t4_update_table(sort_mode):
+    return t4_build_class_summary_table(sort_mode)
     
 if __name__ == "__main__":
     app.run(debug=True)

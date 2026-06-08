@@ -2,17 +2,19 @@
 
 This app helps you asseess skills for your Shop Titans heroes. You can **pick and compare 4-skill builds** for a each **hero class**, using a consistent Rating model that is calculated based on actual simulations and game data.  
 
-Fundamentally it helps answer:  ***Is my skill build "good enough", or should I retire or re-roll.***
+Fundamentally it helps answer: ***Is my skill build "good enough", or should I retire or re-roll.***
 
-The difference is that this approach rates skills **in the full context of the game** using actual data.
+It helps prepare for the hardest **Legendary** and **Huge** mini-bosses where "chest key" drop rates are highest.
 
-What this tool ***is not***:  The ratings/percentiles while *speicific*, are *exact* for a one circumstance out of infinite choices.  Meaning, that what may be the highest rated build here might not be for another set of equipment / spirits.  That said the intent is that this tool is "good enough" to enable decisionmaking, and if you want to be precise, use other simulators to validate what works best for you!
+The difference is that this approach rates skills **in the full context of the game** using actual data. 
+
+What this tool ***is not***:  The ratings/percentiles while *speicific*, are *exact* for a one circumstance out of infinite choices.  Meaning: what may be the highest rated build here might not be for a different set of equipment / spirits.  That said the intent is that this tool is "good enough" to enable decisionmaking, and if you want to be precise, use other simulators to validate what works best for you!
 
 ---
 
 ## Quick Start (30 seconds)
 
-1. **Pick a Hero Class** 
+1. **Pick a Hero Class** the Class Summary tab can help inspire ideas.
 2. Use **2-Skill Explorer** to find strong “cores”. Shows the ratings of each combination of 3rd/4th skills, and a heat map to visualize.
 3. Use **Skill Combo Detail** by seelcting a build, or by setting one manually to see information on each unique 4-skill build.
 4. Use **Single Skill Info** to understand whether one particular skill is generally strong (or only strong in certain contexts).
@@ -36,6 +38,8 @@ This tool is hosted on a free service, and is in an Alpha test mode.
 1. Tricksters are excluded, as they are well covered for there use with Polonia.
 2. Further tuning of the ratings is ongoing. While this will unliekly affect the rating **percentile** of a given build, it may affect the overall rating.
 3. There is a long initial load time, and navigation between screens may not work right the first time. Please try again, and it should work right.
+4. The simulations take months to execute and process. The data gathered is based on Ancient Jungle Extreme, using equipment / spirits that were current in mid-2025. The ratings have been normalized to extrapolate to current conditions. A refresh of the simulation data will be conducted using Meteor Zone extreme once more T16 blueprints are available (and begin replacing the T15 Best-in-Slot equipment/spirit options).
+5. Extreme: Hard Mini-Bosses are difficult for many classes, which causes efficient, defensive (DEF & HP) skills to be highly valued given the sim methodology, and in some cases EVA and Critical Hit skills are less valued. The results follow the data, but the data should be treated as prelimary, and pending the re-run of data noted above. Classes with significant impacts: **Astramancer**, .**Warlock**, **Praetorean** (Blu is undervalued), and **Arch Druid** (high def builds like EWaImpJugMan are undervalued).... <more to come>
 
 ## Requests to Alpha users:
 
@@ -59,7 +63,7 @@ Use this tab to find strong **cores** quickly.
 ### How to use it
 1) Choose **Hero Class**
 2) Choose **Skill 1** + **Skill 2**
-3) If desired, filter <XXXXX>
+3) If desired, set filter for the Heat Map, default is to show "Top 10" skills for the class. You can also exclude one ore more skills from the display.
 4) A table shows in descending order by rank the best performing Skill 3 + Skill 4.  You can navigate to detials by clicking on the rank number or an individual skill.
 5) The heatmap helps you scan “what pairs well with what” at a glance.  You can also click through to a specific build using the heat map.
 

@@ -5,4 +5,3 @@ plotly
 dash-bootstrap-components
 gunicorn
 authlib
-
